@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Evaluador de Ensayos - IA</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <img src="image.png" alt="Logo" class="logo">
+            <h1>Evaluador de Ensayos con IA</h1>
+            <p class="subtitle">Sistema inteligente de evaluación académica</p>
+        </header>
+
+        <main>
+            <div class="upload-section" id="uploadSection">
+                <div class="drop-zone" id="dropZone">
+                    <svg class="upload-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                    </svg>
+                    <h2>Arrastra tu archivo PDF aquí</h2>
+                    <p>o haz clic para seleccionar un archivo</p>
+                    <input type="file" id="fileInput" accept=".pdf" hidden>
+                    <button class="btn-primary" id="selectFileBtn">Seleccionar Archivo</button>
+                </div>
+                <div class="file-info" id="fileInfo" style="display: none;">
+                    <div class="file-details">
+                        <svg class="file-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                        </svg>
+                        <div>
+                            <p class="file-name" id="fileName"></p>
+                            <p class="file-size" id="fileSize"></p>
+                        </div>
+                    </div>
+                    <button class="btn-secondary" id="evaluateBtn">Evaluar Ensayo</button>
+                </div>
+            </div>
+
+            <div class="processing-section" id="processingSection" style="display: none;">
+                <div class="loader"></div>
+                <h2>Procesando ensayo...</h2>
+                <p>El agente de IA está analizando el documento. Esto puede tomar unos momentos.</p>
+            </div>
+
+            <div class="results-section" id="resultsSection" style="display: none;">
+                <div class="results-header">
+                    <h2>Resultados de la Evaluación</h2>
+                    <button class="btn-secondary" id="newEvaluationBtn">Nueva Evaluación</button>
+                </div>
+                
+                <div class="score-card">
+                    <h3>Puntuación Total</h3>
+                    <div class="total-score" id="totalScore">0.00</div>
+                    <div class="score-bar">
+                        <div class="score-fill" id="scoreFill"></div>
+                    </div>
+                </div>
+
+                <div class="criteria-grid">
+                    <div class="criterion-card">
+                        <div class="criterion-header">
+                            <span class="criterion-icon">📝</span>
+                            <h3>Calidad Técnica y Rigor Académico</h3>
+                            <span class="criterion-weight">20%</span>
+                        </div>
+                        <div class="criterion-score" id="score1">-</div>
+                        <p class="criterion-comment" id="comment1"></p>
+                    </div>
+
+                    <div class="criterion-card">
+                        <div class="criterion-header">
+                            <span class="criterion-icon">🎨</span>
+                            <h3>Creatividad y Originalidad</h3>
+                            <span class="criterion-weight">20%</span>
+                        </div>
+                        <div class="criterion-score" id="score2">-</div>
+                        <p class="criterion-comment" id="comment2"></p>
+                    </div>
+
+                    <div class="criterion-card">
+                        <div class="criterion-header">
+                            <span class="criterion-icon">🎯</span>
+                            <h3>Vinculación con los Ejes Temáticos</h3>
+                            <span class="criterion-weight">15%</span>
+                        </div>
+                        <div class="criterion-score" id="score3">-</div>
+                        <p class="criterion-comment" id="comment3"></p>
+                    </div>
+
+                    <div class="criterion-card">
+                        <div class="criterion-header">
+                            <span class="criterion-icon">🌍</span>
+                            <h3>Reflexión sobre Bienestar Colectivo</h3>
+                            <span class="criterion-weight">20%</span>
+                        </div>
+                        <div class="criterion-score" id="score4">-</div>
+                        <p class="criterion-comment" id="comment4"></p>
+                    </div>
+
+                    <div class="criterion-card">
+                        <div class="criterion-header">
+                            <span class="criterion-icon">✨</span>
+                            <h3>Potencial de Impacto y Publicación</h3>
+                            <span class="criterion-weight">20%</span>
+                        </div>
+                        <div class="criterion-score" id="score5">-</div>
+                        <p class="criterion-comment" id="comment5"></p>
+                    </div>
+                </div>
+
+                <div class="general-comment" id="generalComment" style="display: none;">
+                    <h3>Comentario General</h3>
+                    <p id="generalCommentText"></p>
+                </div>
+            </div>
+        </main>
+
+        <footer>
+            <p>&copy; 2025 Sistema de Evaluación de Ensayos. Todos los derechos reservados.</p>
+        </footer>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>

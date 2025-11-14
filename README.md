@@ -1,27 +1,42 @@
-# Agente Evaluador de Ensayos 🎓
+# 🎓 Sistema de Evaluación Inteligente de Ensayos
 
-Sistema de evaluación automática de ensayos usando **LangGraph** y **LangChain** con GPT-4.
+[![Python](https://img.shields.io/badge/Python-3.8+-blue.svg)](https://www.python.org/)
+[![LangChain](https://img.shields.io/badge/LangChain-Latest-green.svg)](https://langchain.com/)
+[![OpenAI](https://img.shields.io/badge/OpenAI-GPT--4-orange.svg)](https://openai.com/)
+[![License](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+
+Sistema de evaluación automática de ensayos académicos impulsado por inteligencia artificial, utilizando **LangGraph** y **LangChain** con modelos GPT-4 de OpenAI.
+
+---
 
 ## ✨ Características Principales
 
-- ✅ **Evaluación automatizada** con 5 criterios académicos rigurosos
-- 📄 **Procesamiento de PDFs** con extracción y limpieza inteligente
-- 🧹 **Limpieza de texto con LLM** para PDFs mal formateados
-- 📊 **Reportes HTML** detallados y visualmente atractivos
-- 🔄 **Procesamiento por lotes** de múltiples ensayos
-- 🎯 **Structured output** para calificaciones precisas
+| Característica | Descripción |
+|----------------|-------------|
+| 🎯 **Evaluación Multi-Criterio** | 5 criterios académicos rigurosos con ponderaciones personalizables |
+| 📄 **Procesamiento Inteligente de PDFs** | Extracción y limpieza automática de documentos |
+| 🤖 **IA Avanzada** | Powered by GPT-4 con structured outputs para precisión |
+| 📊 **Reportes Profesionales** | Generación de reportes HTML visualmente atractivos |
+| 🔄 **Procesamiento por Lotes** | Evaluación masiva de múltiples ensayos |
+| 🌐 **Interfaz Web** | Aplicación web profesional con drag & drop |
+
+---
 
 ## 📋 Criterios de Evaluación
 
-Este agente evalúa ensayos académicos según 5 criterios específicos con ponderaciones establecidas:
+El sistema evalúa ensayos académicos mediante **5 criterios fundamentales**, cada uno con análisis detallado y comentarios constructivos:
 
-1. **Calidad técnica y rigor académico (20%)** - Estructura, coherencia y solidez argumentativa
-2. **Creatividad y originalidad (20%)** - Ideas nuevas y enfoques innovadores
-3. **Vinculación con ejes temáticos (20%)** - Tecnología, sostenibilidad, inclusión
-4. **Bienestar colectivo y responsabilidad social (20%)** - Impactos sociales, éticos y ambientales
-5. **Potencial de impacto y publicación (20%)** - Capacidad de comunicar e inspirar
+| Criterio | Peso | Descripción |
+|----------|------|-------------|
+| 📝 **Calidad Técnica y Rigor Académico** | 20% | Estructura, coherencia, argumentación sólida y respaldo bibliográfico |
+| 🎨 **Creatividad y Originalidad** | 20% | Innovación en ideas, perspectivas únicas y pensamiento crítico |
+| 🎯 **Vinculación con Ejes Temáticos** | 20% | Integración de tecnología, sostenibilidad e inclusión |
+| 🌍 **Bienestar Colectivo y Responsabilidad Social** | 20% | Impacto social, consideraciones éticas y sostenibilidad |
+| ✨ **Potencial de Impacto y Publicación** | 20% | Claridad comunicativa, relevancia y capacidad de inspirar |
 
-Cada criterio se evalúa en una escala del 1 al 5 con comentarios detallados.
+**Sistema de Calificación:** Escala de 1 a 5 con retroalimentación detallada por criterio.
+
+---
 
 ## 🏗️ Arquitectura
 
@@ -53,50 +68,83 @@ essay-agent/
 └── README.md              # Este archivo
 ```
 
-## 🚀 Instalación
+---
 
-1. **Clonar o descargar el proyecto**
+## 🚀 Instalación y Configuración
+
+### Requisitos Previos
+
+- Python 3.8 o superior
+- Cuenta de OpenAI con API key activa
+- pip (gestor de paquetes de Python)
+
+### Pasos de Instalación
+
+#### 1. Clonar el Repositorio
 
 ```bash
 git clone https://github.com/Vania-Janet/llm-essay-reviewer.git
 cd llm-essay-reviewer
 ```
 
-2. **Instalar dependencias**:
+#### 2. Instalar Dependencias
 
 ```bash
 pip install -r requirements.txt
 ```
 
-**Nota**: Esto instalará automáticamente:
-- `langchain`, `langgraph`, `langchain-openai` (evaluación con LLMs)
-- `pypdf` y `pdfplumber` (procesamiento de PDFs)
-- `pydantic`, `python-dotenv` (utilidades)
+**Dependencias principales:**
+- `langchain`, `langgraph`, `langchain-openai` - Framework de IA
+- `pypdf`, `pdfplumber` - Procesamiento de documentos PDF
+- `flask` - Servidor web (para interfaz web)
+- `pydantic`, `python-dotenv` - Utilidades y validación
 
-3. **Configurar variables de entorno**:
+#### 3. Configurar Variables de Entorno
 
-Crea o edita el archivo `.env`:
+Crea un archivo `.env` en la raíz del proyecto:
+
 ```env
-OPENAI_API_KEY=tu_clave_de_openai_aqui
+OPENAI_API_KEY=sk-tu_clave_aqui
 ```
 
-**Obtener API key**: https://platform.openai.com/api-keys
+> 🔑 **Obtén tu API Key:** [https://platform.openai.com/api-keys](https://platform.openai.com/api-keys)
 
-4. **Verificar instalación**:
+#### 4. Verificar Instalación
 
 ```bash
 python test_pdf_processor.py
 ```
 
-## 💻 Uso
+---
 
-### Opción 1: Evaluar ensayos desde PDFs (Recomendado)
+## 💻 Guía de Uso
+
+### 🌐 Opción 1: Interfaz Web (Recomendado)
+
+La forma más sencilla de usar el sistema:
+
+```bash
+cd web
+python app.py
+```
+
+Luego abre en tu navegador: **http://localhost:5001**
+
+**Características de la interfaz web:**
+- ✅ Drag & drop de archivos PDF
+- ✅ Procesamiento en tiempo real
+- ✅ Visualización profesional de resultados
+- ✅ Diseño responsivo y moderno
+
+---
+
+### 📄 Opción 2: Evaluar PDFs desde Línea de Comandos
 
 ```bash
 python evaluar_pdfs.py
 ```
 
-Este script:
+**Proceso automatizado:**
 1. Extrae texto del PDF usando pypdf o pdfplumber
 2. Limpia el texto con LLM (quita números de página, une líneas cortadas, etc.)
 3. Evalúa el ensayo con los 5 criterios
@@ -114,23 +162,35 @@ from evaluar_pdfs import evaluar_directorio_pdfs
 evaluar_directorio_pdfs("pdfs_ensayos/", output_dir="reportes")
 ```
 
-### Opción 2: Evaluar archivos de texto
+---
+
+### 📝 Opción 3: Evaluar Archivos de Texto
 
 ```bash
 python main.py
 ```
 
-### Opción 3: Evaluación masiva de archivos .txt
+---
+
+### 🔄 Opción 4: Evaluación Masiva (Batch Processing)
 
 ```bash
 python evaluar_batch.py
 ```
 
-### Opción 4: Procesar PDFs sin evaluar (solo limpieza)
+Procesa múltiples ensayos simultáneamente desde un directorio.
+
+---
+
+### 🧹 Opción 5: Procesamiento de PDFs (Solo Limpieza)
 
 ```bash
 python pdf_processor.py
 ```
+
+Extrae y limpia texto de PDFs sin evaluación.
+
+---
 
 ### Uso programático básico:
 
@@ -235,51 +295,103 @@ processor.procesar_pdf("ensayo.pdf", metodo="pypdf")  # Más rápido
 processor.procesar_pdf("ensayo.pdf", metodo="pdfplumber")  # Mejor calidad
 ```
 
-## 🛠️ Tecnologías
+---
 
-- **LangChain**: Framework para aplicaciones con LLMs
-- **LangGraph**: Orquestación de flujos complejos con grafos
-- **OpenAI GPT-4**: Modelo de lenguaje para evaluación
-- **Pydantic**: Validación de datos y modelos estructurados
-- **pypdf / pdfplumber**: Extracción de texto desde PDFs
-- **Python 3.8+**
+## 🛠️ Stack Tecnológico
+
+| Tecnología | Propósito | Versión |
+|------------|-----------|---------|
+| **LangChain** | Framework para aplicaciones LLM | Latest |
+| **LangGraph** | Orquestación de flujos con grafos | Latest |
+| **OpenAI GPT-4** | Modelo de lenguaje avanzado | GPT-4 / GPT-4o |
+| **Flask** | Servidor web backend | Latest |
+| **Pydantic** | Validación y modelos de datos | 2.0+ |
+| **pypdf / pdfplumber** | Procesamiento de documentos PDF | Latest |
+| **Python** | Lenguaje de programación | 3.8+ |
+
+---
+
+---
 
 ## 🎯 Casos de Uso
 
-1. **Evaluación de convocatorias**: Procesa y evalúa múltiples ensayos enviados en PDF
-2. **Feedback automático**: Proporciona retroalimentación detallada a estudiantes
-3. **Pre-selección**: Filtra ensayos por puntuación antes de revisión humana
-4. **Limpieza de documentos**: Procesa PDFs académicos para análisis posterior
-5. **Análisis comparativo**: Genera estadísticas de múltiples ensayos
+### Instituciones Educativas
+- ✅ Evaluación automática de admisiones
+- ✅ Retroalimentación instantánea para estudiantes
+- ✅ Pre-selección de trabajos académicos
 
-## 📝 Notas Importantes
+### Convocatorias y Concursos
+- ✅ Procesamiento masivo de ensayos
+- ✅ Evaluación objetiva y estandarizada
+- ✅ Generación de reportes comparativos
 
-- El agente está optimizado para ensayos en español
-- Cada evaluación toma aproximadamente 1-2 minutos dependiendo del largo
-- **Evaluación**: Se recomienda GPT-4 o GPT-4o para mejores resultados
-- **Limpieza de PDF**: GPT-4o-mini es suficiente y más económico
-- Los comentarios son constructivos y orientados a la mejora
-- La limpieza de PDF mantiene TODO el contenido original, solo mejora el formato
-- Usa structured output para garantizar calificaciones precisas (1-5)
+### Investigación y Análisis
+- ✅ Limpieza y estructuración de documentos académicos
+- ✅ Análisis de contenido textual
+- ✅ Extracción de insights de múltiples ensayos
 
-## 🔐 Variables de Entorno Requeridas
+---
 
-```env
-OPENAI_API_KEY=sk-...  # Tu clave API de OpenAI
-```
+---
 
-## 📄 Licencia
+## ⚙️ Configuración y Optimización
 
-Este proyecto es de código abierto.
+### Modelos Recomendados
+
+| Tarea | Modelo | Razón |
+|-------|--------|-------|
+| **Evaluación de Ensayos** | GPT-4 / GPT-4o | Mayor precisión y análisis profundo |
+| **Limpieza de PDFs** | GPT-4o-mini | Costo-efectivo, suficiente para limpieza |
+
+### Notas Importantes
+
+- ✅ Sistema optimizado para ensayos en **español**
+- ⏱️ Tiempo de evaluación: **1-2 minutos** por ensayo
+- 🎯 **Structured outputs** garantizan calificaciones precisas (1-5)
+- 💬 Comentarios constructivos orientados a la mejora
+- 📄 La limpieza de PDFs mantiene **100% del contenido original**
+
+---
 
 ## 🤝 Contribuciones
 
-Las contribuciones son bienvenidas. Por favor:
-1. Haz fork del proyecto
-2. Crea una rama para tu feature
-3. Haz commit de tus cambios
-4. Abre un Pull Request
+Las contribuciones son bienvenidas y apreciadas. Para contribuir:
 
-## 📧 Contacto
+1. 🍴 Fork del repositorio
+2. 🔨 Crea una rama para tu feature (`git checkout -b feature/NuevaFuncionalidad`)
+3. 💾 Commit tus cambios (`git commit -m 'Agregar nueva funcionalidad'`)
+4. 📤 Push a la rama (`git push origin feature/NuevaFuncionalidad`)
+5. 🎯 Abre un Pull Request
 
-Para preguntas o sugerencias, abre un issue en el repositorio.
+---
+
+## 📄 Licencia
+
+Este proyecto está bajo la licencia MIT. Ver el archivo `LICENSE` para más detalles.
+
+---
+
+## 📧 Soporte y Contacto
+
+- 🐛 **Reportar bugs:** [Abrir un issue](https://github.com/Vania-Janet/llm-essay-reviewer/issues)
+- 💡 **Sugerencias:** [Iniciar una discusión](https://github.com/Vania-Janet/llm-essay-reviewer/discussions)
+- 📧 **Email:** [Contacto directo](mailto:tu-email@ejemplo.com)
+
+---
+
+## 🌟 Agradecimientos
+
+Desarrollado con ❤️ utilizando tecnologías de vanguardia en IA y procesamiento de lenguaje natural.
+
+**Powered by:**
+- [LangChain](https://langchain.com/)
+- [OpenAI](https://openai.com/)
+- [Python](https://python.org/)
+
+---
+
+<div align="center">
+
+**⭐ Si este proyecto te fue útil, considera darle una estrella ⭐**
+
+</div>
