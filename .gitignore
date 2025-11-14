@@ -1,0 +1,53 @@
+
+# --- Python ---
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.pdb
+*.pkl
+*.pickle
+*.sav
+*.pth
+*.db
+
+# --- Virtual environments ---
+venv/
+.venv/
+env/
+ENV/
+*.env
+*.venv
+
+# --- Jupyter Notebooks checkpoints ---
+.ipynb_checkpoints/
+
+# --- OS / Editor files ---
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+
+# --- Logs ---
+*.log
+logs/
+nohup.out
+
+# --- Byte-compiled / C extensions ---
+*.so
+
+# --- Build / distribution ---
+build/
+dist/
+*.egg-info/
+.eggs/
+
+# --- Cache ---
+.cache/
+*.cache
+/.pytest_cache/
+.pytest_cache/
+__pycache__
+
+# --- Data files (you may edit this depending on your needs) ---
+data/

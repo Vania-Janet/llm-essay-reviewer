@@ -1,0 +1,287 @@
+Ver con las manos, oír con los ojos: IA accesible en pantallas Samsung para inclusión y
+sostenibilidad
+Autora: Vania Janet Raya Rios
+Pseudónimo: Aurora
+En 2025, más de 2.2 mil millones de personas, casi una de cada cuatro en el
+mundo, vivirán con alguna forma de deficiencia visual1
+
+, y alrededor de 430 millones (5%
+de la población mundial) tendrán una pérdida auditiva discapacitante2 según la
+Organización Mundial de la Salud (OMS). En México, la pérdida auditiva asciende a
+19,376 casos por cada 100,000 habitantes, una cifra significativamente más alta que en
+países desarrollados como Estados Unidos o Canadá.3
+Estas cifras exigen un rediseño de las herramientas y dispositivos tecnológicos,
+transformándolos en soluciones asequibles que abarquen todo el espectro de
+necesidades: desde dificultades de movimiento, visión y audición, hasta limitaciones en el
+funcionamiento intelectual.
+La presente reflexión examina cómo Samsung Electronics, referente global en
+electrónica, semiconductores, telefonía móvil y televisores (cuya participación en este
+último fue del 28.3% en el mercado global en 20244
+
+), ha evolucionado en la integración de
+
+características de accesibilidad en sus pantallas inteligentes.
+En este ensayo se argumenta cómo la innovación tecnológica potenciada con
+Inteligencia Artificial orientada a las funciones de accesibilidad permite no solo cumplir con
+las responsabilidades éticas corporativas sino que también es un componente social que
+se alinea con los Objetivos de Desarrollo Sostenible (ODS) de las Naciones Unidas. Por
+otra parte, la evidencia empírica demuestra que la inclusión de la discapacidad genera
+ventajas competitivas tangibles. Un estudio de Accenture (2018), que analizó 346
+organizaciones, reveló que las empresas líderes en inclusión de discapacidad obtienen
+1.6 veces más ingresos y 2.6 veces más ingreso neto que sus pares.5 Estos datos
+confirman que el compromiso con la accesibilidad también es una fuente real de
+innovación y valor económico.
+
+5 Accenture, Disability:IN, & AAPD. (2023, November). The disability inclusion imperative.
+https://www.accenture.com/content/dam/accenture/final/accenture-com/document-2/Disability-Inclusion-Report-Business-Imperative.pdf
+4 Samsung Electronics Co., Ltd. (2025, March). Samsung Electronics marks 19 consecutive years as the global TV market leader.
+Retrieved from https://news.samsung.com/us/samsung-electronics-marks-19-consecutive-years-global-tv-market-leader/
+3 Graue-Hernández, E. O., Contreras-Ruiz, J., Sáenz-Barrenechea, N., Mújica-Mota, M. A., López-Guevara, M., Ibáñez-López, M. A., &
+Rodríguez-Caravaca, G. (2019). Self-reported hearing loss and visual impairment in adults aged 50 years and older in Mexico. Salud
+Pública de México, 61 (5), 580–590. https://www.scielo.org.mx/scielo.php?script=sci_arttext&pid=S0036-36342019000500015
+2 World Health Organization. (2025, February). Deafness and hearing loss.
+https://www.who.int/news-room/fact-sheets/detail/deafness-and-hearing-loss
+1 World Health Organization. (2022, October). Blindness and vision impairment.
+https://www.who.int/news-room/fact-sheets/detail/blindness-and-visual-impairment
+
+1
+
+La tecnología inaccesible impide la independencia, dificulta el trabajo y el
+aprendizaje. Los datos revelan que el 44% de los usuarios de sitios web cambiaría de
+empresa si la tecnología no es accesible, el 79% declara que no tienen suficiente
+independencia y el 63% afirma que tienen pocas opciones de negocios que ofrezcan
+soluciones tecnológicas inclusivas.6 Este fenómeno se replica en dispositivos
+audiovisuales donde menús complejos, controles sin retroalimentación táctil o auditiva, y
+contenidos sin descripciones alternativas crean experiencias excluyentes.
+La Convención sobre los Derechos de las Personas con Discapacidad de las
+Naciones Unidas reconoce el acceso a la información y las tecnologías de comunicación
+como derechos humanos esenciales.7 En este contexto, las pantallas accesibles de
+Samsung se alinean con múltiples Objetivos de Desarrollo Sostenible: ODS 10
+(Reducción de las Desigualdades) al democratizar el acceso a contenidos audiovisuales;
+ODS 4 (Educación de Calidad) al facilitar el consumo de contenido educativo para
+personas con discapacidad; ODS 8 (Trabajo Decente y Crecimiento Económico) al
+permitir que tecnologías accesibles mantengan la independencia necesaria para la
+participación laboral; y ODS 12 (Consumo Responsable) al proporcionar productos
+duraderos y útiles.8
+Además, la sostenibilidad ambiental y social se entrelazan: los productos
+accesibles y bien diseñados suelen tener una vida útil más larga, pues las personas con
+discapacidad tienden a conservarlos por más tiempo al encontrar en ellos una
+herramienta que se adapta a sus necesidades cambiantes. Este principio es la esencia de
+la economía circular: al priorizar la durabilidad, la adaptabilidad y la longevidad sobre el
+reemplazo frecuente, no solo se reduce la generación de e-waste, sino que se optimiza el
+uso de recursos y se minimiza la extracción de nuevas materias primas. La accesibilidad,
+en este sentido, se convierte en un catalizador de la sostenibilidad ambiental.
+Ecosistema de innovación Samsung
+Para materializar este compromiso, Samsung ha construido un ecosistema de
+innovación accesible. Una de las innovaciones más significativas de Samsung en
+accesibilidad es el Modo Relumino, lanzado en CES 2023 y galardonado con el CES
+Innovation Award. Esta tecnología está diseñada para el 90% de las personas que tienen
+baja visión (sin ceguera total). Relumino acentúa contornos, ajusta contraste, color y
+
+8 United Nations. (n.d.). THE 17 GOALS. https://sdgs.un.org/goals
+7 Office of the High Commissioner for Human Rights. (2006, December). Convention on the Rights of Persons with Disabilities.
+https://www.ohchr.org/en/instruments-mechanisms/instruments/convention-rights-persons-disabilities
+6 American Foundation for the Blind. (2023, April). Barriers to digital inclusion (BDIS-1). Retrieved from
+https://afb.org/research-and-initiatives/research/summaries/barriers-digital-inclusion-1
+
+2
+
+nitidez para ayudar a los espectadores a distinguir objetos en pantalla, transformando la
+experiencia audiovisual de borrosa e inaccesible a agradable.9
+El Modo Relumino fue sometido a pruebas clínicas rigurosas en el Samsung
+Medical Center, donde usuarios con baja visión fueron evaluados a 1 metro de distancia
+de los televisores bajo condiciones de iluminación controladas. Las pruebas midieron
+tanto datos subjetivos (retroalimentación y satisfacción del usuario) como datos objetivos
+(pruebas de sensibilidad al contraste mediante instrumentos científicos).10 Más aún,
+Relumino recibió la certificación "Tried and Tested" de la Royal National Institute of Blind
+People (RNIB) en el Reino Unido, convirtiéndose en el primer fabricante de televisores en
+recibir esta acreditación.11 El director David Clark de RNIB declaró sobre los televisores
+Samsung: "Es la primera vez que personas ciegas y con visión parcial pueden usar en su
+totalidad un televisor inteligente de forma completamente independiente".12
+Además, el proceso de desarrollo siguió la metodología de diseñar con usuarios en
+lugar de para usuarios: ingenieros de Samsung trabajaron con personas con discapacidad
+visual y crearon gafas de simulación especiales para comprender a fondo las múltiples y
+complejas experiencias de los usuarios con visión deteriorada (Samsung Electronics Co.,
+Ltd., 2023). Esta metodología no solo mejora la usabilidad en un 40%13
+
+, sino que es la
+materialización del principio de “diseño con agencia y responsabilidad social” propuesto
+por la convocatoria, donde los usuarios dejan de ser consumidores pasivos para
+convertirse en co-creadores de la tecnología que modelará su futuro.
+Samsung introdujo el Modo SeeColors en 2023 diseñado específicamente para
+usuarios con daltonismo. Esta característica ajusta los niveles de rojo, verde y azul para
+diversos tipos de deficiencia en la visión cromática, recibiendo certificación de
+"Accesibilidad de Visión del Color" de TÜV Rheinland.14
+Además, Samsung integra una arquitectura de soluciones multimodales:15
+
+15 Samsung Electronics Co., Ltd.. (n.d.). Accesibilidad | Samsung Latinoamérica.
+https://www.samsung.com/latin/sustainability/accessibility/overview/
+14 DisplayDaily. (2023, June). Samsung adds SeeColors Mode to 2023 TV and monitor lineup, enhancing
+accessibility for color vision deficiency.
+https://displaydaily.com/samsung-adds-seecolors-mode-to-2023-tv-and-monitor-lineup-enhancing-accessibilit
+y-for-color-blindness/
+13 Fable. (2025, September 18). The UX researcher’s guide to getting started with accessibility research.
+https://makeitfable.com/article/how-to-get-started-with-accessibility-research/
+12 Tibken, S. (2021, January). Samsung makes its 2021 TVs more accessible for people with vision or hearing disabilities. CNET.
+https://www.cnet.com/tech/home-entertainment/samsung-makes-its-2021-tvs-more-accessible-for-people-with-vision-or-hearing-disabiliti
+es/
+11 Samsung Electronics Co., Ltd. (2020, September). Samsung TV receives accreditation from Royal National Institute of Blind People
+(RNIB) in the UK. Retrieved from
+https://news.samsung.com/global/samsung-tv-receives-accreditation-from-royal-national-institute-of-blind-people-rnib-in-the-uk
+10 Samsung Electronics Co., Ltd. (2023, November 7). [Entrevista] Promoviendo la equidad en el entretenimiento: Creando una
+experiencia televisiva inclusiva con el modo Relumino. Samsung Newsroom Latinoamérica.
+
+https://news.samsung.com/latin/entrevista-promoviendo-la-equidad-en-el-entretenimiento-creando-una-experiencia-televisiva-inclusiva-
+con-el-modo-relumino
+
+9 Samsung Electronics Co., Ltd. (2023). Relumino [Feature Story]. Samsung Sustainability. Retrieved from
+https://www.samsung.com/global/sustainability/focus/story/relumino/
+
+3
+
+Para usuarios ciegos y con baja visión:
+● Guía de voz (Voice Guide): Anuncia opciones de menú, cambios de volumen, canal
+e información de programas, con opciones personalizables en tono y velocidad.
+● Descripción de audio (Audio Description): Tecnología de texto a voz que describe
+contenido en pantalla, permitiendo a usuarios ciegos seguir narrativas visuales.
+● Alto contraste (High Contrast): Fondo negro opaco con texto blanco en menús para
+usuarios con baja visión.
+● Zoom de menú y texto (Zoom Menu & Text): Aumenta el tamaño de fuente para
+facilitar la lectura.
+● Modo en escala de grises (Grayscale Mode): Muestra únicamente tonos de negro,
+blanco y gris para usuarios con daltonismo severo.
+● Inversión de color (Color Inversion): Invierte colores de menús y aplicaciones para
+crear visuales más suaves.
+● Aprender el control remoto (Learn TV Remote): Descripciones verbales de botones
+del control y elementos del menú.
+● Imagen apagada (Picture Off): Desactiva la pantalla pero mantiene la salida de
+audio, útil para usuarios ciegos.
+Para usuarios sordos y con pérdida auditiva:
+● Subtítulos (Closed Captions): Múltiples opciones de personalización incluyendo
+fuente, tamaño, color y fondo.
+● Zoom de lengua de señas (Sign Language Zoom): Amplía y reposiciona al
+intérprete de lenguas de señas en pantalla.
+● Guía de Lenguas de Señas (Sign Language Guide): Avatar que interpreta todas las
+opciones del menú a lengua de señas estadounidense (ASL), con opciones de
+personalización de tamaño, velocidad, posición y tipo de avatar.
+● Audio de Salida Múltiple (Multi-Output Audio): Transmite audio simultáneamente a
+altavoces del televisor y audífonos Bluetooth, beneficiando a usuarios con pérdida
+auditiva que utilizan audífonos Bluetooth.
+El 4 de septiembre de 2025, en IFA (Berlín), Samsung anunció Vision AI impulsado por
+Bixby16 que ofrece experiencias conversacionales personalizadas. Este ecosistema
+incorpora:17
+
+17 Samsung Electronics Co., Ltd. (2024). Samsung Smart TV Accessibility Features: Vision Mode Demo [Video]. YouTube.
+https://www.youtube.com/watch?v=8tJOOBD4Pss&t=19s
+16 Samsung Electronics Co., Ltd. (2025, September). Samsung unveils Vision AI companion at IFA 2025, launching a new era of
+AI-powered displays. Retrieved from
+https://news.samsung.com/global/samsung-unveils-vision-ai-companion-at-ifa-2025-launching-a-new-era-of-ai-powered-displays
+
+4
+
+● Traducción en vivo (Live Translate): Traducción en tiempo real tanto para
+conversaciones como para diálogos en pantalla, con potencial transformador para
+usuarios sordos y con pérdida auditiva al eliminar barreras lingüísticas en
+contenidos sin subtítulos en su idioma.
+● Descripción de escena por voz (Voice-based Scene Description): El Companion de
+Vision AI puede describir cualquier elemento en pantalla bajo solicitud,
+expandiendo dramáticamente la autonomía de usuarios ciegos más allá de
+descripciones de audio pregrabadas.
+● Amplificador de voz activo Pro (Active Voice Amplifier Pro): IA que ajusta
+automáticamente la claridad del audio según las condiciones ambientales.
+● Optimización de imagen con IA (AI Picture Optimization): Ajusta automáticamente
+contraste y brillo para espectadores con baja visión sin requerir configuración
+manual.
+La IA permite una integración completa para que las pantallas no solo muestren
+contenido sino que aprendan, decidan y se adapten dinámicamente a las necesidades
+individuales de los usuarios.
+A pesar de los avances, el futuro depara desafíos aún mayores, especialmente en
+la intersección de discapacidades.
+El siguiente desafío: la interseccionalidad de las discapacidades
+¿Qué sucede con los usuarios que son sordos y ciegos a la vez? El acceso de
+personas sordociegas a la televisión depende de la combinación de tecnologías hápticas,
+braille y software personalizado, lo cual aún no alcanza el nivel de accesibilidad que
+ofrecen las soluciones para otras discapacidades sensoriales.
+Algunas soluciones que aún parecen lejanas recaen en la investigación científica de los
+dispositivos de la línea braille electrónica. Actualmente estos incorporan patrones de
+vibración que podrían reflejar eventos narrados o emociones por la audiodescripción de
+programas televisivos.18 En deportes, existen tabletas conectadas por 5G que traducen
+jugadas y acciones en vibraciones y movimientos sobre la superficie táctil para usuarios
+ciegos; en teoría, adaptables para sordociegos si se combinan con canales braille.19
+Otros métodos incluyen:
+
+19
+(2024, 10 de octubre). Dispositivo sensorial portátil para personas ciegas. CNN Español.
+https://cnnespanol.cnn.com/2024/10/10/dispositivo-sensorial-portatil-ciegos-trax
+18 García López, Á. (2022). Nuevos sistemas hápticos para la evocación de emociones en eventos audiovisuales en personas con
+discapacidad auditiva (Tesis de doctorado, Universidad Carlos III de Madrid).
+https://e-archivo.uc3m.es/rest/api/core/bitstreams/78bcd71e-42e5-4d77-9d67-bcac0d86188a/content
+
+5
+
+● Software voz a braille: Conversión automática de narraciones y subtitulado en texto
+braille táctil.20
+● Interfaces Cerebro-Computadora (BCI) y tecnologías emergentes: Exploración del
+control de dispositivos y la transmisión de eventos audiovisuales por señales
+electroencefalográficas con neural earbuds.21
+Si bien Samsung ya ofrece un avatar de lenguas de señas que interpreta opciones
+de menú, aún falta integrarlo en los canales y series de televisión. En 2021 se propuso un
+sistema de reconocimiento de lenguas de señas con una cámara integrada en los
+televisores (CNET, 2021). Por otra parte, el desafío técnico es considerable: requiere
+visión computarizada en tiempo real y algoritmos de IA entrenados en lenguas de señas,
+considerando que existen más de 300 lenguas de señas regionales con variaciones
+significativas.22
+De acuerdo con los Centers for Disease Control and Prevention (CDC), la
+cognición constituye el segundo tipo de discapacidad más prevalente.23 En este sentido,
+una perspectiva orientada al futuro debería contemplar la implementación de un modo de
+navegación simplificado y un diseño de interfaz de usuario (UI) fundamentado en la
+claridad, con el propósito de mitigar la sobrecarga sensorial y cognitiva.
+Finalmente, el mayor desafío ético emerge con el propio éxito de la IA. Funciones
+como Vision AI que aprenden, deciden y se adaptan al usuario, inevitablemente
+recolectan datos sensibles sobre las condiciones y comportamientos de personas en
+situación de vulnerabilidad. Una verdadera innovación responsable debe ir acompañada
+de transparencia: ¿Cómo se protegen estos datos? ¿Se utilizan para entrenar modelos
+sin perpetuar sesgos?
+El acceso a las mejores funciones de accesibilidad, como las presentes en los
+modelos Neo QLED 4K, ¿Genera acaso una nueva brecha digital dentro de la propia
+comunidad con discapacidad, separando a quienes pueden pagar por la tecnología
+premium de quienes no?
+El impacto de este enfoque inclusivo deja de ser una abstracción cuando se
+materializa en historias de vida concretas. Un ejemplo profundamente inspirador es el de
+Sheridan O’Donnell, director y escritor diagnosticado en 2021 con una rara condición
+
+23 Centers for Disease Control and Prevention. (2024, November). Disability | PLACES. Retrieved from
+https://www.cdc.gov/places/measure-definitions/disability.html
+22 Wikipedia. (2025, February). List of sign languages. https://en.wikipedia.org/wiki/List_of_sign_languages
+21 Barragán Gómez, J., Chío Cho, N., Quiles Cucarella, E., & Carvajal Solano, D. A. (2024). Las interfaces cerebro-computador
+basadas en potenciales evocados visuales en estado estacionario (SSVEP) para aplicaciones en brazos robóticos: una revisión. In B.
+Kloss (Ed.), Lecturas emergentes en los campos de la ciencia, tecnología y técnica. P.I.E. PETER LANG s.a.
+https://apolo.unab.edu.co/es/publications/las-interfaces-cerebro-computador-basadas-en-potenciales-evocados/
+20 Experimenta. (2018, June 26). Tactile, de texto impreso a Braille. El conversor en tiempo real diseñado por el MIT.
+https://www.experimenta.es/noticias/tecnologia/tactile-de-texto-impreso-a-braille-el-conversor-en-tiempo-real-disenado-por-el-mit/
+
+6
+
+llamada retinitis pigmentosa, la cual causa un deterioro progresivo de la visión.24 Sheridan
+comparte cómo funciones de accesibilidad como Voice Guide, Audio Description y,
+especialmente, el Modo Relumino, le permitieron revisar su propio cortometraje Flush y
+continuar dirigiendo.25 Su caso ejemplifica cómo la tecnología, cuando está bien diseñada,
+no solo soluciona un problema funcional, sino que preserva pasiones e identidades
+profesionales.
+Es en esta intersección entre la necesidad humana y la innovación donde Samsung
+ha centrado sus esfuerzos mediante la iniciativa “Tech for All” que busca ofrecer
+tecnología accesible e inclusiva a través del diseño de productos, características y
+programas con impacto social.26 El camino marcado por tecnologías como Vision AI
+demuestra que, aunque aún quedan grandes retos, especialmente para usuarios con
+interseccionalidad de discapacidades, el futuro es prometedor. La ruta es concreta:
+diseñar con personas usuarias (sensorial, motora y cognitiva), publicar más métricas y
+estadísticas públicas de impacto (adopción, satisfacción, autonomía) y realizar una
+divulgación activa para que más usuarios conozcan y configuren estas funciones.
+Porque la innovación más poderosa no se mide en las especificaciones del
+hardware ni en el poder del procesamiento, sino en cuántas vidas se permite ver, oír,
+comprender y decidir, sin barreras.
+Los 2.2 mil millones de personas con discapacidad visual no son una estadística
+abstracta; tienen el rostro de Sheridan O'Donnell, la urgencia de los usuarios sordociegos
+y representan la razón de ser de una innovación que, guiada por la IA y una ética
+profundamente humana, está redefiniendo lo que significa ver, oír y participar en el
+mundo. Esa es la verdadera mirada al mañana.
