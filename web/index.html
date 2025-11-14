@@ -16,6 +16,35 @@
 
         <main>
             <div class="main-content">
+            <!-- Sección de historial de ensayos -->
+            <div class="essays-history-section" id="essaysHistorySection" style="display: none;">
+                <div class="history-header">
+                    <h2>Historial de Ensayos Evaluados</h2>
+                    <div class="history-actions">
+                        <button class="btn-primary" id="compareSelectedBtn" disabled>
+                            Comparar Seleccionados
+                        </button>
+                        <button class="btn-secondary" id="closeHistoryBtn">Cerrar</button>
+                    </div>
+                </div>
+                <div class="essays-list" id="essaysList">
+                    <div class="loader"></div>
+                    <p>Cargando ensayos...</p>
+                </div>
+            </div>
+
+            <!-- Sección de comparación -->
+            <div class="comparison-section" id="comparisonSection" style="display: none;">
+                <div class="comparison-header">
+                    <h2>Comparación de Ensayos</h2>
+                    <button class="btn-secondary" id="closeComparisonBtn">Cerrar</button>
+                </div>
+                <div class="comparison-content" id="comparisonContent">
+                    <div class="loader"></div>
+                    <p>Generando análisis comparativo...</p>
+                </div>
+            </div>
+
             <div class="upload-section" id="uploadSection">
                 <div class="drop-zone" id="dropZone">
                     <svg class="upload-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -50,6 +79,12 @@
                 <div class="results-header">
                     <h2>Resultados de la Evaluación</h2>
                     <div class="header-actions">
+                        <button class="btn-action" id="viewHistoryBtn" title="Ver historial de ensayos">
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
+                            Ver Historial
+                        </button>
                         <button class="btn-action" id="editReportBtn" title="Editar reporte">
                             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />

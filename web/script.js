@@ -28,11 +28,22 @@ const editTotalScore = document.getElementById('editTotalScore');
 const saveScoreBtn = document.getElementById('saveScoreBtn');
 const editGeneralCommentBtn = document.getElementById('editGeneralCommentBtn');
 
+// History and comparison elements
+const essaysHistorySection = document.getElementById('essaysHistorySection');
+const viewHistoryBtn = document.getElementById('viewHistoryBtn');
+const closeHistoryBtn = document.getElementById('closeHistoryBtn');
+const essaysList = document.getElementById('essaysList');
+const compareSelectedBtn = document.getElementById('compareSelectedBtn');
+const comparisonSection = document.getElementById('comparisonSection');
+const closeComparisonBtn = document.getElementById('closeComparisonBtn');
+const comparisonContent = document.getElementById('comparisonContent');
+
 let selectedFile = null;
 // Variables globales para almacenar la evaluación actual
 let currentEvaluation = null;
 let currentEssayText = null;
 let isEditMode = false;
+let selectedEssays = new Set();
 
 // Event Listeners
 selectFileBtn.addEventListener('click', () => fileInput.click());
@@ -59,6 +70,12 @@ closeScoreEditor.addEventListener('click', () => {
 });
 saveScoreBtn.addEventListener('click', saveTotalScore);
 editGeneralCommentBtn.addEventListener('click', toggleGeneralCommentEdit);
+
+// History and comparison event listeners
+viewHistoryBtn.addEventListener('click', showEssaysHistory);
+closeHistoryBtn.addEventListener('click', hideEssaysHistory);
+compareSelectedBtn.addEventListener('click', compareEssays);
+closeComparisonBtn.addEventListener('click', hideComparison);
 
 // Edit criterion buttons
 document.addEventListener('click', (e) => {
@@ -737,5 +754,148 @@ function generateHTMLReport(evaluation) {
         </div>
     </div>
 </body>
-</html>`;
+</html>
+    `;
+
+    const blob = new Blob([html], { type: 'text/html' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `reporte_evaluacion_${date}.html`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+}
+
+// Funciones para historial y comparación
+async function showEssaysHistory() {
+    essaysHistorySection.style.display = 'block';
+    uploadSection.style.display = 'none';
+    resultsSection.style.display = 'none';
+    comparisonSection.style.display = 'none';
+    
+    essaysList.innerHTML = '<div class="loader"></div><p>Cargando ensayos...</p>';
+    selectedEssays.clear();
+    compareSelectedBtn.disabled = true;
+    
+    try {
+        const response = await fetch('/essays');
+        if (!response.ok) throw new Error('Error al cargar ensayos');
+        
+        const essays = await response.json();
+        
+        if (essays.length === 0) {
+            essaysList.innerHTML = '<p style="text-align: center; color: #6b7280;">No hay ensayos evaluados aún.</p>';
+            return;
+        }
+        
+        essaysList.innerHTML = essays.map(essay => `
+            <div class="essay-item" data-id="${essay.id}">
+                <input type="checkbox" class="essay-checkbox" data-id="${essay.id}">
+                <div class="essay-info">
+                    <div class="essay-name">${essay.nombre_archivo}</div>
+                    <div class="essay-meta">
+                        <span>📅 ${new Date(essay.fecha_evaluacion).toLocaleString('es-MX')}</span>
+                        <span>📄 ${essay.texto_preview}</span>
+                    </div>
+                </div>
+                <div class="essay-score">${essay.puntuacion_total.toFixed(2)}/5.00</div>
+            </div>
+        `).join('');
+        
+        // Agregar event listeners a los checkboxes
+        document.querySelectorAll('.essay-checkbox').forEach(checkbox => {
+            checkbox.addEventListener('change', handleEssaySelection);
+        });
+        
+    } catch (error) {
+        console.error('Error:', error);
+        essaysList.innerHTML = `<p style="color: red; text-align: center;">Error al cargar ensayos: ${error.message}</p>`;
+    }
+}
+
+function hideEssaysHistory() {
+    essaysHistorySection.style.display = 'none';
+    uploadSection.style.display = 'block';
+}
+
+function handleEssaySelection(e) {
+    const essayId = parseInt(e.target.dataset.id);
+    const essayItem = e.target.closest('.essay-item');
+    
+    if (e.target.checked) {
+        selectedEssays.add(essayId);
+        essayItem.classList.add('selected');
+    } else {
+        selectedEssays.delete(essayId);
+        essayItem.classList.remove('selected');
+    }
+    
+    compareSelectedBtn.disabled = selectedEssays.size < 2;
+}
+
+async function compareEssays() {
+    if (selectedEssays.size < 2) {
+        alert('Debe seleccionar al menos 2 ensayos para comparar');
+        return;
+    }
+    
+    essaysHistorySection.style.display = 'none';
+    comparisonSection.style.display = 'block';
+    comparisonContent.innerHTML = '<div class="loader"></div><p>Generando análisis comparativo...</p>';
+    
+    try {
+        const response = await fetch('/compare', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                essay_ids: Array.from(selectedEssays)
+            })
+        });
+        
+        if (!response.ok) {
+            const error = await response.json();
+            throw new Error(error.error || 'Error al comparar ensayos');
+        }
+        
+        const result = await response.json();
+        
+        // Mostrar resumen de ensayos comparados
+        const essaysSummary = result.ensayos.map((essay, index) => `
+            <div class="essay-comparison-card">
+                <h4>Ensayo ${index + 1}: ${essay.nombre_archivo}</h4>
+                <p><strong>Puntuación Total:</strong> ${essay.puntuacion_total.toFixed(2)}/5.00</p>
+                <p><strong>Fecha:</strong> ${new Date(essay.fecha_evaluacion).toLocaleString('es-MX')}</p>
+            </div>
+        `).join('');
+        
+        // Convertir markdown a HTML básico
+        const comparisonHTML = result.comparacion
+            .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+            .replace(/\n\n/g, '</p><p>')
+            .replace(/\n/g, '<br>');
+        
+        comparisonContent.innerHTML = `
+            <div class="essays-summary">
+                <h3>Ensayos Comparados</h3>
+                ${essaysSummary}
+            </div>
+            <div class="comparison-analysis">
+                <h3>Análisis Comparativo</h3>
+                <p>${comparisonHTML}</p>
+            </div>
+        `;
+        
+    } catch (error) {
+        console.error('Error:', error);
+        comparisonContent.innerHTML = `<p style="color: red; text-align: center;">Error: ${error.message}</p>`;
+    }
+}
+
+function hideComparison() {
+    comparisonSection.style.display = 'none';
+    essaysHistorySection.style.display = 'block';
 }
