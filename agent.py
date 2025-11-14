@@ -152,21 +152,21 @@ class EvaluadorEnsayos:
         
         # Preparar resumen de evaluaciones previas
         evaluaciones_previas = f"""
-1. CALIDAD TÉCNICA Y RIGOR ACADÉMICO: {state['calidad_tecnica']['calificacion']}/5
-   {state['calidad_tecnica']['comentario']}
+            1. CALIDAD TÉCNICA Y RIGOR ACADÉMICO: {state['calidad_tecnica']['calificacion']}/5
+            {state['calidad_tecnica']['comentario']}
 
-2. CREATIVIDAD Y ORIGINALIDAD: {state['creatividad']['calificacion']}/5
-   {state['creatividad']['comentario']}
+            2. CREATIVIDAD Y ORIGINALIDAD: {state['creatividad']['calificacion']}/5
+            {state['creatividad']['comentario']}
 
-3. VINCULACIÓN TEMÁTICA: {state['vinculacion_tematica']['calificacion']}/5
-   {state['vinculacion_tematica']['comentario']}
+            3. VINCULACIÓN TEMÁTICA: {state['vinculacion_tematica']['calificacion']}/5
+            {state['vinculacion_tematica']['comentario']}
 
-4. BIENESTAR COLECTIVO: {state['bienestar_colectivo']['calificacion']}/5
-   {state['bienestar_colectivo']['comentario']}
+            4. BIENESTAR COLECTIVO: {state['bienestar_colectivo']['calificacion']}/5
+            {state['bienestar_colectivo']['comentario']}
 
-5. POTENCIAL DE IMPACTO: {state['potencial_impacto']['calificacion']}/5
-   {state['potencial_impacto']['comentario']}
-"""
+            5. POTENCIAL DE IMPACTO: {state['potencial_impacto']['calificacion']}/5
+            {state['potencial_impacto']['comentario']}
+            """
         
         prompt = ChatPromptTemplate.from_messages([
             ("system", PROMPT_SISTEMA),

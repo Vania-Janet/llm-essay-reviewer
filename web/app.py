@@ -83,26 +83,63 @@ def evaluate():
             
             # Convertir a diccionario para JSON
             resultado = {
+                'texto_ensayo': texto[:500] + '...' if len(texto) > 500 else texto,  # Resumen para la UI
+                'texto_completo': texto,  # Texto completo para el chat
                 'puntuacion_total': evaluacion.puntuacion_total,
                 'calidad_tecnica': {
                     'calificacion': evaluacion.calidad_tecnica.calificacion,
-                    'comentario': evaluacion.calidad_tecnica.comentario
+                    'comentario': evaluacion.calidad_tecnica.comentario,
+                    'fragmentos_destacados': [
+                        {
+                            'texto': f.texto,
+                            'impacto': f.impacto,
+                            'razon': f.razon
+                        } for f in (evaluacion.calidad_tecnica.fragmentos_destacados or [])
+                    ]
                 },
                 'creatividad': {
                     'calificacion': evaluacion.creatividad.calificacion,
-                    'comentario': evaluacion.creatividad.comentario
+                    'comentario': evaluacion.creatividad.comentario,
+                    'fragmentos_destacados': [
+                        {
+                            'texto': f.texto,
+                            'impacto': f.impacto,
+                            'razon': f.razon
+                        } for f in (evaluacion.creatividad.fragmentos_destacados or [])
+                    ]
                 },
                 'vinculacion_tematica': {
                     'calificacion': evaluacion.vinculacion_tematica.calificacion,
-                    'comentario': evaluacion.vinculacion_tematica.comentario
+                    'comentario': evaluacion.vinculacion_tematica.comentario,
+                    'fragmentos_destacados': [
+                        {
+                            'texto': f.texto,
+                            'impacto': f.impacto,
+                            'razon': f.razon
+                        } for f in (evaluacion.vinculacion_tematica.fragmentos_destacados or [])
+                    ]
                 },
                 'bienestar_colectivo': {
                     'calificacion': evaluacion.bienestar_colectivo.calificacion,
-                    'comentario': evaluacion.bienestar_colectivo.comentario
+                    'comentario': evaluacion.bienestar_colectivo.comentario,
+                    'fragmentos_destacados': [
+                        {
+                            'texto': f.texto,
+                            'impacto': f.impacto,
+                            'razon': f.razon
+                        } for f in (evaluacion.bienestar_colectivo.fragmentos_destacados or [])
+                    ]
                 },
                 'potencial_impacto': {
                     'calificacion': evaluacion.potencial_impacto.calificacion,
-                    'comentario': evaluacion.potencial_impacto.comentario
+                    'comentario': evaluacion.potencial_impacto.comentario,
+                    'fragmentos_destacados': [
+                        {
+                            'texto': f.texto,
+                            'impacto': f.impacto,
+                            'razon': f.razon
+                        } for f in (evaluacion.potencial_impacto.fragmentos_destacados or [])
+                    ]
                 },
                 'comentario_general': evaluacion.comentario_general
             }
@@ -128,6 +165,7 @@ def chat():
         data = request.json
         message = data.get('message', '')
         evaluation = data.get('evaluation', {})
+        essay_text = data.get('essay_text', '')
         
         if not message:
             return jsonify({'error': 'No se proporcionó un mensaje'}), 400
@@ -137,6 +175,11 @@ def chat():
         
         # Construir contexto de la evaluación
         contexto_evaluacion = f"""
+TEXTO COMPLETO DEL ENSAYO:
+{essay_text if essay_text else '[Texto no disponible]'}
+
+---
+
 EVALUACIÓN DEL ENSAYO:
 
 Puntuación Total: {evaluation.get('puntuacion_total', 'N/A')}/5.00
@@ -177,18 +220,23 @@ Tus responsabilidades incluyen:
 - Proporcionar sugerencias concretas para mejorar el ensayo
 - Explicar el sistema de evaluación y los criterios utilizados
 - Ofrecer orientación académica profesional
+- Citar fragmentos específicos del ensayo para justificar las calificaciones
+- Proporcionar ejemplos concretos del texto cuando sea relevante
 
 IMPORTANTE:
+- Tienes acceso al texto completo del ensayo y a toda la evaluación
+- Cuando justifiques una calificación, CITA fragmentos específicos del ensayo
+- Usa comillas para indicar citas textuales del ensayo
 - Mantén un tono formal y profesional en todo momento
 - Proporciona respuestas claras, concisas y bien estructuradas
 - Cuando des sugerencias, sé específico y constructivo
 - Si el usuario pregunta algo fuera del contexto de la evaluación, redirige cortésmente a temas académicos relevantes
-- No inventes información que no esté en la evaluación
+- No inventes información que no esté en la evaluación o en el ensayo
 
 Contexto de la evaluación actual:
 {contexto}
 
-Responde la siguiente consulta del usuario de manera profesional y útil."""),
+Responde la siguiente consulta del usuario de manera profesional y útil, citando fragmentos del ensayo cuando sea apropiado."""),
             ("user", "{mensaje}")
         ])
         

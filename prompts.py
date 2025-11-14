@@ -35,6 +35,11 @@ ENSAYO:
 {ensayo}
 
 Asigna una calificación del 1 al 5 y justifícala con un comentario detallado que mencione fortalezas, debilidades y sugerencias específicas.
+
+IMPORTANTE: Identifica 2-3 fragmentos específicos del ensayo (citas textuales cortas de 20-50 palabras) que hayan influido positiva o negativamente en tu calificación. Para cada fragmento, indica:
+- El texto exacto citado del ensayo
+- Si tuvo un impacto positivo o negativo
+- Por qué ese fragmento es significativo para este criterio
 """
 
 PROMPT_CREATIVIDAD = """Evalúa la CREATIVIDAD Y ORIGINALIDAD del siguiente ensayo (20% del total).
@@ -54,6 +59,11 @@ ENSAYO:
 {ensayo}
 
 Asigna una calificación del 1 al 5 y justifícala con un comentario detallado que mencione fortalezas, debilidades y sugerencias específicas.
+
+IMPORTANTE: Identifica 2-3 fragmentos específicos del ensayo (citas textuales cortas de 20-50 palabras) que hayan influido positiva o negativamente en tu calificación. Para cada fragmento, indica:
+- El texto exacto citado del ensayo
+- Si tuvo un impacto positivo o negativo
+- Por qué ese fragmento es significativo para este criterio
 """
 
 PROMPT_VINCULACION_TEMATICA = """Evalúa la VINCULACIÓN CON LOS EJES TEMÁTICOS DE LA CONVOCATORIA del siguiente ensayo (15% del total).
@@ -77,6 +87,11 @@ ENSAYO:
 {ensayo}
 
 Asigna una calificación del 1 al 5 y justifícala con un comentario detallado que mencione fortalezas, debilidades y sugerencias específicas.
+
+IMPORTANTE: Identifica 2-3 fragmentos específicos del ensayo (citas textuales cortas de 20-50 palabras) que hayan influido positiva o negativamente en tu calificación. Para cada fragmento, indica:
+- El texto exacto citado del ensayo
+- Si tuvo un impacto positivo o negativo
+- Por qué ese fragmento es significativo para este criterio
 """
 
 PROMPT_BIENESTAR_COLECTIVO = """Evalúa la REFLEXIÓN SOBRE BIENESTAR COLECTIVO Y RESPONSABILIDAD SOCIAL del siguiente ensayo (20% del total).
@@ -96,6 +111,11 @@ ENSAYO:
 {ensayo}
 
 Asigna una calificación del 1 al 5 y justifícala con un comentario detallado que mencione fortalezas, debilidades y sugerencias específicas.
+
+IMPORTANTE: Identifica 2-3 fragmentos específicos del ensayo (citas textuales cortas de 20-50 palabras) que hayan influido positiva o negativamente en tu calificación. Para cada fragmento, indica:
+- El texto exacto citado del ensayo
+- Si tuvo un impacto positivo o negativo
+- Por qué ese fragmento es significativo para este criterio
 """
 
 PROMPT_POTENCIAL_IMPACTO = """Evalúa el POTENCIAL DE IMPACTO Y PUBLICACIÓN del siguiente ensayo (10% del total).
@@ -116,6 +136,11 @@ ENSAYO:
 {ensayo}
 
 Asigna una calificación del 1 al 5 y justifícala con un comentario detallado que mencione fortalezas, debilidades y sugerencias específicas.
+
+IMPORTANTE: Identifica 2-3 fragmentos específicos del ensayo (citas textuales cortas de 20-50 palabras) que hayan influido positiva o negativamente en tu calificación. Para cada fragmento, indica:
+- El texto exacto citado del ensayo
+- Si tuvo un impacto positivo o negativo
+- Por qué ese fragmento es significativo para este criterio
 """
 
 PROMPT_COMENTARIO_GENERAL = """Basándote en todas las evaluaciones previas de los 5 criterios, genera un COMENTARIO GENERAL Y RETROALIMENTACIÓN para el autor del ensayo.

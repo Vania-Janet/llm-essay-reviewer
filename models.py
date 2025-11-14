@@ -1,14 +1,25 @@
 """
 Modelos de datos para el sistema de evaluación de ensayos.
 """
-from typing import Optional
+from typing import Optional, List
 from pydantic import BaseModel, Field
+
+
+class FragmentoDestacado(BaseModel):
+    """Fragmento destacado del ensayo con su impacto."""
+    texto: str = Field(..., description="Fragmento del ensayo")
+    impacto: str = Field(..., description="'positivo' o 'negativo'")
+    razon: str = Field(..., description="Razón por la que destaca este fragmento")
 
 
 class EvaluacionCriterio(BaseModel):
     """Evaluación de un criterio individual."""
     calificacion: int = Field(..., ge=1, le=5, description="Calificación del 1 al 5")
     comentario: str = Field(..., description="Comentario justificando la calificación")
+    fragmentos_destacados: Optional[List[FragmentoDestacado]] = Field(
+        default_factory=list,
+        description="Fragmentos clave del ensayo que influenciaron esta calificación"
+    )
 
 
 class EvaluacionEnsayo(BaseModel):

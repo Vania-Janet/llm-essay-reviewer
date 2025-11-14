@@ -49,10 +49,24 @@
             <div class="results-section" id="resultsSection" style="display: none;">
                 <div class="results-header">
                     <h2>Resultados de la Evaluación</h2>
-                    <button class="btn-secondary" id="newEvaluationBtn">Nueva Evaluación</button>
+                    <div class="header-actions">
+                        <button class="btn-action" id="editReportBtn" title="Editar reporte">
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                            </svg>
+                            Editar Reporte
+                        </button>
+                        <button class="btn-action" id="downloadReportBtn" title="Descargar reporte">
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                            </svg>
+                            Descargar
+                        </button>
+                        <button class="btn-secondary" id="newEvaluationBtn">Nueva Evaluación</button>
+                    </div>
                 </div>
                 
-                <div class="score-card">
+                <div class="score-card" id="scoreCard">
                     <h3>Puntuación Total</h3>
                     <div class="total-score" id="totalScore">0.00</div>
                     <div class="score-bar">
@@ -60,62 +74,173 @@
                     </div>
                 </div>
 
+                <!-- Editor de Puntuación -->
+                <div class="score-editor" id="scoreEditor" style="display: none;">
+                    <div class="editor-header">
+                        <h3>Editar Puntuación Total</h3>
+                        <button class="btn-close" id="closeScoreEditor">×</button>
+                    </div>
+                    <div class="editor-content">
+                        <label for="editTotalScore">Puntuación Total (0.00 - 5.00):</label>
+                        <input type="number" id="editTotalScore" min="0" max="5" step="0.01" class="score-input">
+                        <button class="btn-primary" id="saveScoreBtn">Guardar Cambios</button>
+                    </div>
+                </div>
+
                 <div class="criteria-grid">
-                    <div class="criterion-card">
+                                        <div class="criterion-card" data-criterion="1">
                         <div class="criterion-header">
                             <span class="criterion-icon">📝</span>
                             <h3>Calidad Técnica y Rigor Académico</h3>
-                            <span class="criterion-weight">20%</span>
+                            <span class="criterion-weight">25%</span>
+                            <button class="btn-edit-criterion" data-criterion="1" title="Editar criterio">
+                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                                </svg>
+                            </button>
                         </div>
                         <div class="criterion-score" id="score1">-</div>
-                        <p class="criterion-comment" id="comment1"></p>
+                        <p class="criterion-comment" id="comment1" contenteditable="false"></p>
+                        <div class="fragments-container" id="fragments1"></div>
                     </div>
 
-                    <div class="criterion-card">
+                    <div class="criterion-card" data-criterion="2">
                         <div class="criterion-header">
                             <span class="criterion-icon">🎨</span>
                             <h3>Creatividad y Originalidad</h3>
                             <span class="criterion-weight">20%</span>
+                            <button class="btn-edit-criterion" data-criterion="2" title="Editar criterio">
+                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                                </svg>
+                            </button>
                         </div>
                         <div class="criterion-score" id="score2">-</div>
-                        <p class="criterion-comment" id="comment2"></p>
+                        <p class="criterion-comment" id="comment2" contenteditable="false"></p>
+                        <div class="fragments-container" id="fragments2"></div>
                     </div>
 
-                    <div class="criterion-card">
+                    <div class="criterion-card" data-criterion="3">
                         <div class="criterion-header">
                             <span class="criterion-icon">🎯</span>
                             <h3>Vinculación con los Ejes Temáticos</h3>
                             <span class="criterion-weight">15%</span>
+                            <button class="btn-edit-criterion" data-criterion="3" title="Editar criterio">
+                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                                </svg>
+                            </button>
                         </div>
                         <div class="criterion-score" id="score3">-</div>
-                        <p class="criterion-comment" id="comment3"></p>
+                        <p class="criterion-comment" id="comment3" contenteditable="false"></p>
+                        <div class="fragments-container" id="fragments3"></div>
                     </div>
 
-                    <div class="criterion-card">
+                    <div class="criterion-card" data-criterion="4">
                         <div class="criterion-header">
                             <span class="criterion-icon">🌍</span>
                             <h3>Reflexión sobre Bienestar Colectivo</h3>
                             <span class="criterion-weight">20%</span>
+                            <button class="btn-edit-criterion" data-criterion="4" title="Editar criterio">
+                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                                </svg>
+                            </button>
                         </div>
                         <div class="criterion-score" id="score4">-</div>
-                        <p class="criterion-comment" id="comment4"></p>
+                        <p class="criterion-comment" id="comment4" contenteditable="false"></p>
+                        <div class="fragments-container" id="fragments4"></div>
                     </div>
 
-                    <div class="criterion-card">
+                    <div class="criterion-card" data-criterion="5">
                         <div class="criterion-header">
                             <span class="criterion-icon">✨</span>
                             <h3>Potencial de Impacto y Publicación</h3>
                             <span class="criterion-weight">20%</span>
+                            <button class="btn-edit-criterion" data-criterion="5" title="Editar criterio">
+                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                                </svg>
+                            </button>
                         </div>
                         <div class="criterion-score" id="score5">-</div>
-                        <p class="criterion-comment" id="comment5"></p>
+                        <p class="criterion-comment" id="comment5" contenteditable="false"></p>
+                        <div class="fragments-container" id="fragments5"></div>
+                    </div>
+
+                    <div class="criterion-card" data-criterion="2">
+                        <div class="criterion-header">
+                            <span class="criterion-icon">🎨</span>
+                            <h3>Creatividad y Originalidad</h3>
+                            <span class="criterion-weight">20%</span>
+                            <button class="btn-edit-criterion" data-criterion="2" title="Editar criterio">
+                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                                </svg>
+                            </button>
+                        </div>
+                        <div class="criterion-score" id="score2">-</div>
+                        <p class="criterion-comment" id="comment2" contenteditable="false"></p>
+                    </div>
+
+                    <div class="criterion-card" data-criterion="3">
+                        <div class="criterion-header">
+                            <span class="criterion-icon">🎯</span>
+                            <h3>Vinculación con los Ejes Temáticos</h3>
+                            <span class="criterion-weight">15%</span>
+                            <button class="btn-edit-criterion" data-criterion="3" title="Editar criterio">
+                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                                </svg>
+                            </button>
+                        </div>
+                        <div class="criterion-score" id="score3">-</div>
+                        <p class="criterion-comment" id="comment3" contenteditable="false"></p>
+                    </div>
+
+                    <div class="criterion-card" data-criterion="4">
+                        <div class="criterion-header">
+                            <span class="criterion-icon">🌍</span>
+                            <h3>Reflexión sobre Bienestar Colectivo</h3>
+                            <span class="criterion-weight">20%</span>
+                            <button class="btn-edit-criterion" data-criterion="4" title="Editar criterio">
+                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                                </svg>
+                            </button>
+                        </div>
+                        <div class="criterion-score" id="score4">-</div>
+                        <p class="criterion-comment" id="comment4" contenteditable="false"></p>
+                    </div>
+
+                    <div class="criterion-card" data-criterion="5">
+                        <div class="criterion-header">
+                            <span class="criterion-icon">✨</span>
+                            <h3>Potencial de Impacto y Publicación</h3>
+                            <span class="criterion-weight">20%</span>
+                            <button class="btn-edit-criterion" data-criterion="5" title="Editar criterio">
+                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                                </svg>
+                            </button>
+                        </div>
+                        <div class="criterion-score" id="score5">-</div>
+                        <p class="criterion-comment" id="comment5" contenteditable="false"></p>
                     </div>
                 </div>
 
                 <div class="general-comment" id="generalComment" style="display: none;">
-                    <h3>Comentario General</h3>
-                    <p id="generalCommentText"></p>
+                    <div class="comment-header">
+                        <h3>Comentario General</h3>
+                        <button class="btn-edit-comment" id="editGeneralCommentBtn" title="Editar comentario">
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                            </svg>
+                        </button>
+                    </div>
+                    <p id="generalCommentText" contenteditable="false"></p>
                 </div>
+            </div>
             </div>
             </div>
 
