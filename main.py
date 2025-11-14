@@ -37,15 +37,7 @@ def imprimir_evaluacion(evaluacion: EvaluacionEnsayo):
     print()
     
     # Criterio 5
-    print("🤖 5. USO RESPONSABLE Y REFLEXIVO DE HERRAMIENTAS DE IA (15%)")
-    print(f"   Calificación: {evaluacion.uso_ia.calificacion}/5")
-    if evaluacion.no_utilizo_ia:
-        print("   ⚠️  No utilizó IA")
-    print(f"   {evaluacion.uso_ia.comentario}")
-    print()
-    
-    # Criterio 6
-    print("✨ 6. POTENCIAL DE IMPACTO Y PUBLICACIÓN (10%)")
+    print("✨ 5. POTENCIAL DE IMPACTO Y PUBLICACIÓN (20%)")
     print(f"   Calificación: {evaluacion.potencial_impacto.calificacion}/5")
     print(f"   {evaluacion.potencial_impacto.comentario}")
     print()
@@ -170,7 +162,7 @@ def guardar_evaluacion_html(evaluacion: EvaluacionEnsayo, archivo: str = "evalua
         </div>
         
         <div class="criterio">
-            <h3>🎯 3. Vinculación con los Ejes Temáticos (15%)</h3>
+            <h3>🎯 3. Vinculación con los Ejes Temáticos (20%)</h3>
             <div class="calificacion">Calificación: {evaluacion.vinculacion_tematica.calificacion}/5</div>
             <div class="comentario">{evaluacion.vinculacion_tematica.comentario}</div>
         </div>
@@ -182,16 +174,7 @@ def guardar_evaluacion_html(evaluacion: EvaluacionEnsayo, archivo: str = "evalua
         </div>
         
         <div class="criterio">
-            <h3>🤖 5. Uso Responsable y Reflexivo de Herramientas de IA (15%)</h3>
-            <div class="calificacion">
-                Calificación: {evaluacion.uso_ia.calificacion}/5
-                {"<span class='badge'>NO UTILIZÓ IA</span>" if evaluacion.no_utilizo_ia else ""}
-            </div>
-            <div class="comentario">{evaluacion.uso_ia.comentario}</div>
-        </div>
-        
-        <div class="criterio">
-            <h3>✨ 6. Potencial de Impacto y Publicación (10%)</h3>
+            <h3>✨ 5. Potencial de Impacto y Publicación (20%)</h3>
             <div class="calificacion">Calificación: {evaluacion.potencial_impacto.calificacion}/5</div>
             <div class="comentario">{evaluacion.potencial_impacto.comentario}</div>
         </div>

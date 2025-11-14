@@ -124,7 +124,7 @@ class EvaluadorEnsayos:
             "calificacion": evaluacion.calificacion,
             "comentario": evaluacion.comentario
         }
-        state["paso_actual"] = "uso_ia"
+        state["paso_actual"] = "impacto"
         return state
     
     def _evaluar_impacto(self, state: Dict[str, Any]) -> Dict[str, Any]:
@@ -164,10 +164,7 @@ class EvaluadorEnsayos:
 4. BIENESTAR COLECTIVO: {state['bienestar_colectivo']['calificacion']}/5
    {state['bienestar_colectivo']['comentario']}
 
-5. USO RESPONSABLE DE IA: {state['uso_ia']['calificacion']}/5
-   {state['uso_ia']['comentario']}
-
-6. POTENCIAL DE IMPACTO: {state['potencial_impacto']['calificacion']}/5
+5. POTENCIAL DE IMPACTO: {state['potencial_impacto']['calificacion']}/5
    {state['potencial_impacto']['comentario']}
 """
         
@@ -190,8 +187,6 @@ class EvaluadorEnsayos:
             creatividad=EvaluacionCriterio(**state["creatividad"]),
             vinculacion_tematica=EvaluacionCriterio(**state["vinculacion_tematica"]),
             bienestar_colectivo=EvaluacionCriterio(**state["bienestar_colectivo"]),
-            uso_ia=EvaluacionCriterio(**state["uso_ia"]),
-            no_utilizo_ia=state.get("no_utilizo_ia", False),
             potencial_impacto=EvaluacionCriterio(**state["potencial_impacto"]),
             comentario_general=comentario_general
         )
@@ -214,7 +209,6 @@ class EvaluadorEnsayos:
         workflow.add_node("creatividad", self._evaluar_creatividad)
         workflow.add_node("vinculacion", self._evaluar_vinculacion)
         workflow.add_node("bienestar", self._evaluar_bienestar)
-        workflow.add_node("uso_ia", self._evaluar_uso_ia)
         workflow.add_node("impacto", self._evaluar_impacto)
         workflow.add_node("comentario_general", self._generar_comentario_general)
         
@@ -223,8 +217,7 @@ class EvaluadorEnsayos:
         workflow.add_edge("calidad_tecnica", "creatividad")
         workflow.add_edge("creatividad", "vinculacion")
         workflow.add_edge("vinculacion", "bienestar")
-        workflow.add_edge("bienestar", "uso_ia")
-        workflow.add_edge("uso_ia", "impacto")
+        workflow.add_edge("bienestar", "impacto")
         workflow.add_edge("impacto", "comentario_general")
         workflow.add_edge("comentario_general", END)
         

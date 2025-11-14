@@ -4,10 +4,6 @@ Prompts del sistema para evaluación de ensayos.
 
 PROMPT_SISTEMA = """Eres un evaluador experto de ensayos académicos. Tu tarea es evaluar ensayos de manera objetiva, constructiva y detallada siguiendo criterios específicos.
 
-IMPORTANTE: Debes responder en formato JSON estructurado con dos campos:
-- calificacion: número del 1 al 5
-- comentario: texto detallado justificando la calificación
-
 ESCALA DE EVALUACIÓN:
 1 — Deficiente: Sin relación clara con el criterio o con errores conceptuales.
 2 — Bajo: Relación superficial o incompleta con el criterio.
@@ -39,12 +35,6 @@ ENSAYO:
 {ensayo}
 
 Asigna una calificación del 1 al 5 y justifícala con un comentario detallado que mencione fortalezas, debilidades y sugerencias específicas.
-
-Responde únicamente en formato JSON:
-{
-  "calificacion": (número de 1 a 5),
-  "comentario": "Comentario detallado..."
-}
 """
 
 PROMPT_CREATIVIDAD = """Evalúa la CREATIVIDAD Y ORIGINALIDAD del siguiente ensayo (20% del total).
@@ -64,13 +54,6 @@ ENSAYO:
 {ensayo}
 
 Asigna una calificación del 1 al 5 y justifícala con un comentario detallado que mencione fortalezas, debilidades y sugerencias específicas.
-
-Responde únicamente en formato JSON:
-{
-  "calificacion": (número de 1 a 5),
-  "comentario": "Comentario detallado..."
-}
-
 """
 
 PROMPT_VINCULACION_TEMATICA = """Evalúa la VINCULACIÓN CON LOS EJES TEMÁTICOS DE LA CONVOCATORIA del siguiente ensayo (15% del total).
@@ -94,12 +77,6 @@ ENSAYO:
 {ensayo}
 
 Asigna una calificación del 1 al 5 y justifícala con un comentario detallado que mencione fortalezas, debilidades y sugerencias específicas.
-
-Responde únicamente en formato JSON:
-{
-  "calificacion": (número de 1 a 5),
-  "comentario": "Comentario detallado..."
-}
 """
 
 PROMPT_BIENESTAR_COLECTIVO = """Evalúa la REFLEXIÓN SOBRE BIENESTAR COLECTIVO Y RESPONSABILIDAD SOCIAL del siguiente ensayo (20% del total).
@@ -119,12 +96,6 @@ ENSAYO:
 {ensayo}
 
 Asigna una calificación del 1 al 5 y justifícala con un comentario detallado que mencione fortalezas, debilidades y sugerencias específicas.
-
-Responde únicamente en formato JSON:
-{
-  "calificacion": (número de 1 a 5),
-  "comentario": "Comentario detallado..."
-}
 """
 
 PROMPT_POTENCIAL_IMPACTO = """Evalúa el POTENCIAL DE IMPACTO Y PUBLICACIÓN del siguiente ensayo (10% del total).
@@ -145,15 +116,9 @@ ENSAYO:
 {ensayo}
 
 Asigna una calificación del 1 al 5 y justifícala con un comentario detallado que mencione fortalezas, debilidades y sugerencias específicas.
-
-Responde únicamente en formato JSON:
-{
-  "calificacion": (número de 1 a 5),
-  "comentario": "Comentario detallado..."
-}
 """
 
-PROMPT_COMENTARIO_GENERAL = """Basándote en todas las evaluaciones previas de los 6 criterios, genera un COMENTARIO GENERAL Y RETROALIMENTACIÓN para el autor del ensayo.
+PROMPT_COMENTARIO_GENERAL = """Basándote en todas las evaluaciones previas de los 5 criterios, genera un COMENTARIO GENERAL Y RETROALIMENTACIÓN para el autor del ensayo.
 
 EVALUACIONES PREVIAS:
 {evaluaciones_previas}

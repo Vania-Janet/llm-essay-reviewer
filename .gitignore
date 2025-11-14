@@ -49,5 +49,27 @@ dist/
 .pytest_cache/
 __pycache__
 
+# --- Archivos del proyecto ---
+# PDFs de prueba (no subir ensayos reales)
+*.pdf
+pdfs/
+pdfs_ensayos/
+
+# Directorios de salida
+evaluaciones/
+evaluaciones_pdf/
+evals/
+ensayos_limpios/
+reportes/
+
+# Ensayos de prueba
+ensayo_*.txt
+essays/
+!ensayo_ejemplo.txt
+
+# Reportes HTML generados
+*_evaluacion.html
+*_limpio.txt
+
 # --- Data files (you may edit this depending on your needs) ---
 data/

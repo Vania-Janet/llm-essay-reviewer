@@ -26,7 +26,7 @@ class EvaluacionEnsayo(BaseModel):
         description="Evalúa la capacidad del autor para aportar ideas nuevas e innovadoras"
     )
     
-    # Criterio 3: Vinculación con los ejes temáticos (15%)
+    # Criterio 3: Vinculación con los ejes temáticos (20%)
     vinculacion_tematica: EvaluacionCriterio = Field(
         ..., 
         description="Evalúa qué tan directamente aborda los temas de la convocatoria"
@@ -38,17 +38,7 @@ class EvaluacionEnsayo(BaseModel):
         description="Analiza la sensibilidad frente a impactos sociales, éticos y ambientales"
     )
     
-    # Criterio 5: Uso responsable de IA (15%)
-    uso_ia: EvaluacionCriterio = Field(
-        ..., 
-        description="Evalúa la transparencia y ética en el uso de IA"
-    )
-    no_utilizo_ia: bool = Field(
-        False, 
-        description="Indica si el autor no utilizó IA"
-    )
-    
-    # Criterio 6: Potencial de impacto (10%)
+    # Criterio 5: Potencial de impacto (20%)
     potencial_impacto: EvaluacionCriterio = Field(
         ..., 
         description="Evalúa la capacidad para comunicar, inspirar y generar interés"
@@ -76,10 +66,9 @@ class EvaluacionEnsayo(BaseModel):
         ponderaciones = {
             'calidad_tecnica': 0.20,
             'creatividad': 0.20,
-            'vinculacion_tematica': 0.15,
+            'vinculacion_tematica': 0.20,
             'bienestar_colectivo': 0.20,
-            'uso_ia': 0.15,
-            'potencial_impacto': 0.10
+            'potencial_impacto': 0.20
         }
         
         total = (
@@ -87,7 +76,6 @@ class EvaluacionEnsayo(BaseModel):
             self.creatividad.calificacion * ponderaciones['creatividad'] +
             self.vinculacion_tematica.calificacion * ponderaciones['vinculacion_tematica'] +
             self.bienestar_colectivo.calificacion * ponderaciones['bienestar_colectivo'] +
-            self.uso_ia.calificacion * ponderaciones['uso_ia'] +
             self.potencial_impacto.calificacion * ponderaciones['potencial_impacto']
         )
         
