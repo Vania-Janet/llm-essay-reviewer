@@ -1,4 +1,4 @@
-# 🎓 Sistema de Evaluación Inteligente de Ensayos
+# Sistema de Evaluación Inteligente de Ensayos
 
 [![Python](https://img.shields.io/badge/Python-3.8+-blue.svg)](https://www.python.org/)
 [![LangChain](https://img.shields.io/badge/LangChain-Latest-green.svg)](https://langchain.com/)
@@ -7,40 +7,47 @@
 
 Sistema de evaluación automática de ensayos académicos impulsado por inteligencia artificial, utilizando **LangGraph** y **LangChain** con modelos GPT-4 de OpenAI.
 
+<!-- Inserte aquí GIF o video demostrativo del sistema -->
+<!-- ![Demo del Sistema](ruta/al/demo.gif) -->
+<!-- O para video: [![Video Demo](thumbnail.png)](https://link-al-video.com) -->
+
 ---
 
-## ✨ Características Principales
+## Características Principales
 
 | Característica | Descripción |
 |----------------|-------------|
-| 🎯 **Evaluación Multi-Criterio** | 5 criterios académicos rigurosos con ponderaciones personalizables |
-| 📄 **Procesamiento Inteligente de PDFs** | Extracción y limpieza automática de documentos |
-| 🤖 **IA Avanzada** | Powered by GPT-4 con structured outputs para precisión |
-| 📊 **Reportes Profesionales** | Generación de reportes HTML visualmente atractivos |
-| 🔄 **Procesamiento por Lotes** | Evaluación masiva de múltiples ensayos |
-| 🌐 **Interfaz Web** | Aplicación web profesional con drag & drop |
+| **Evaluación Multi-Criterio** | 5 criterios académicos rigurosos con ponderaciones personalizables |
+| **Procesamiento Inteligente de PDFs** | Extracción y limpieza automática de documentos |
+| **IA Avanzada** | Powered by GPT-4 con structured outputs para precisión |
+| **Reportes Profesionales** | Generación de reportes HTML visualmente atractivos |
+| **Procesamiento por Lotes** | Evaluación masiva de múltiples ensayos |
+| **Interfaz Web** | Aplicación web profesional con drag & drop |
 
 ---
 
-## 📋 Criterios de Evaluación
+## Criterios de Evaluación
 
 El sistema evalúa ensayos académicos mediante **5 criterios fundamentales**, cada uno con análisis detallado y comentarios constructivos:
 
 | Criterio | Peso | Descripción |
 |----------|------|-------------|
-| 📝 **Calidad Técnica y Rigor Académico** | 20% | Estructura, coherencia, argumentación sólida y respaldo bibliográfico |
-| 🎨 **Creatividad y Originalidad** | 20% | Innovación en ideas, perspectivas únicas y pensamiento crítico |
-| 🎯 **Vinculación con Ejes Temáticos** | 20% | Integración de tecnología, sostenibilidad e inclusión |
-| 🌍 **Bienestar Colectivo y Responsabilidad Social** | 20% | Impacto social, consideraciones éticas y sostenibilidad |
-| ✨ **Potencial de Impacto y Publicación** | 20% | Claridad comunicativa, relevancia y capacidad de inspirar |
+| **Calidad Técnica y Rigor Académico** | 20% | Estructura, coherencia, argumentación sólida y respaldo bibliográfico |
+| **Creatividad y Originalidad** | 20% | Innovación en ideas, perspectivas únicas y pensamiento crítico |
+| **Vinculación con Ejes Temáticos** | 20% | Integración de tecnología, sostenibilidad e inclusión |
+| **Bienestar Colectivo y Responsabilidad Social** | 20% | Impacto social, consideraciones éticas y sostenibilidad |
+| **Potencial de Impacto y Publicación** | 20% | Claridad comunicativa, relevancia y capacidad de inspirar |
 
 **Sistema de Calificación:** Escala de 1 a 5 con retroalimentación detallada por criterio.
 
 ---
 
-## 🏗️ Arquitectura
+## Arquitectura
 
 El sistema utiliza **LangGraph** para crear un grafo de evaluación secuencial:
+
+<!-- Inserte aquí diagrama de arquitectura -->
+<!-- ![Diagrama de Arquitectura](ruta/al/diagrama-arquitectura.png) -->
 
 ```
 Inicio → Calidad Técnica → Creatividad → Vinculación → Bienestar → Impacto → Comentario General → Fin
@@ -52,7 +59,7 @@ Cada nodo del grafo:
 - Genera comentarios detallados
 - Pasa el estado al siguiente nodo
 
-## 📁 Estructura del Proyecto
+## Estructura del Proyecto
 
 ```
 essay-agent/
@@ -70,7 +77,7 @@ essay-agent/
 
 ---
 
-## 🚀 Instalación y Configuración
+## Instalación y Configuración
 
 ### Requisitos Previos
 
@@ -107,7 +114,7 @@ Crea un archivo `.env` en la raíz del proyecto:
 OPENAI_API_KEY=sk-tu_clave_aqui
 ```
 
-> 🔑 **Obtén tu API Key:** [https://platform.openai.com/api-keys](https://platform.openai.com/api-keys)
+> **Obtén tu API Key:** [https://platform.openai.com/api-keys](https://platform.openai.com/api-keys)
 
 #### 4. Verificar Instalación
 
@@ -117,9 +124,9 @@ python test_pdf_processor.py
 
 ---
 
-## 💻 Guía de Uso
+## Guía de Uso
 
-### 🌐 Opción 1: Interfaz Web (Recomendado)
+### Opción 1: Interfaz Web (Recomendado)
 
 La forma más sencilla de usar el sistema:
 
@@ -131,14 +138,14 @@ python app.py
 Luego abre en tu navegador: **http://localhost:5001**
 
 **Características de la interfaz web:**
-- ✅ Drag & drop de archivos PDF
-- ✅ Procesamiento en tiempo real
-- ✅ Visualización profesional de resultados
-- ✅ Diseño responsivo y moderno
+- Drag & drop de archivos PDF
+- Procesamiento en tiempo real
+- Visualización profesional de resultados
+- Diseño responsivo y moderno
 
 ---
 
-### 📄 Opción 2: Evaluar PDFs desde Línea de Comandos
+### Opción 2: Evaluar PDFs desde Línea de Comandos
 
 ```bash
 python evaluar_pdfs.py
@@ -164,7 +171,7 @@ evaluar_directorio_pdfs("pdfs_ensayos/", output_dir="reportes")
 
 ---
 
-### 📝 Opción 3: Evaluar Archivos de Texto
+### Opción 3: Evaluar Archivos de Texto
 
 ```bash
 python main.py
@@ -172,7 +179,7 @@ python main.py
 
 ---
 
-### 🔄 Opción 4: Evaluación Masiva (Batch Processing)
+### Opción 4: Evaluación Masiva (Batch Processing)
 
 ```bash
 python evaluar_batch.py
@@ -182,7 +189,7 @@ Procesa múltiples ensayos simultáneamente desde un directorio.
 
 ---
 
-### 🧹 Opción 5: Procesamiento de PDFs (Solo Limpieza)
+### Opción 5: Procesamiento de PDFs (Solo Limpieza)
 
 ```bash
 python pdf_processor.py
@@ -247,18 +254,18 @@ El sistema genera:
 ### Ejemplo de salida:
 
 ```
-📝 1. CALIDAD TÉCNICA Y RIGOR ACADÉMICO (20%)
+1. CALIDAD TÉCNICA Y RIGOR ACADÉMICO (20%)
    Calificación: 4/5
    El ensayo presenta una estructura coherente y argumentos bien sustentados...
 
-🎨 2. CREATIVIDAD Y ORIGINALIDAD (20%)
+2. CREATIVIDAD Y ORIGINALIDAD (20%)
    Calificación: 5/5
    Destacable propuesta de "tecnología educativa comunitaria"...
 
-🎯 PUNTUACIÓN TOTAL PONDERADA: 4.35/5.00
+PUNTUACIÓN TOTAL PONDERADA: 4.35/5.00
 ```
 
-## 🔧 Personalización
+## Personalización
 
 ### Cambiar modelo de IA:
 
@@ -297,7 +304,7 @@ processor.procesar_pdf("ensayo.pdf", metodo="pdfplumber")  # Mejor calidad
 
 ---
 
-## 🛠️ Stack Tecnológico
+## Stack Tecnológico
 
 | Tecnología | Propósito | Versión |
 |------------|-----------|---------|
@@ -311,30 +318,26 @@ processor.procesar_pdf("ensayo.pdf", metodo="pdfplumber")  # Mejor calidad
 
 ---
 
----
-
-## 🎯 Casos de Uso
+## Casos de Uso
 
 ### Instituciones Educativas
-- ✅ Evaluación automática de admisiones
-- ✅ Retroalimentación instantánea para estudiantes
-- ✅ Pre-selección de trabajos académicos
+- Evaluación automática de admisiones
+- Retroalimentación instantánea para estudiantes
+- Pre-selección de trabajos académicos
 
 ### Convocatorias y Concursos
-- ✅ Procesamiento masivo de ensayos
-- ✅ Evaluación objetiva y estandarizada
-- ✅ Generación de reportes comparativos
+- Procesamiento masivo de ensayos
+- Evaluación objetiva y estandarizada
+- Generación de reportes comparativos
 
 ### Investigación y Análisis
-- ✅ Limpieza y estructuración de documentos académicos
-- ✅ Análisis de contenido textual
-- ✅ Extracción de insights de múltiples ensayos
+- Limpieza y estructuración de documentos académicos
+- Análisis de contenido textual
+- Extracción de insights de múltiples ensayos
 
 ---
 
----
-
-## ⚙️ Configuración y Optimización
+## Configuración y Optimización
 
 ### Modelos Recomendados
 
@@ -345,43 +348,43 @@ processor.procesar_pdf("ensayo.pdf", metodo="pdfplumber")  # Mejor calidad
 
 ### Notas Importantes
 
-- ✅ Sistema optimizado para ensayos en **español**
-- ⏱️ Tiempo de evaluación: **1-2 minutos** por ensayo
-- 🎯 **Structured outputs** garantizan calificaciones precisas (1-5)
-- 💬 Comentarios constructivos orientados a la mejora
-- 📄 La limpieza de PDFs mantiene **100% del contenido original**
+- Sistema optimizado para ensayos en **español**
+- Tiempo de evaluación: **1-2 minutos** por ensayo
+- **Structured outputs** garantizan calificaciones precisas (1-5)
+- Comentarios constructivos orientados a la mejora
+- La limpieza de PDFs mantiene **100% del contenido original**
 
 ---
 
-## 🤝 Contribuciones
+## Contribuciones
 
 Las contribuciones son bienvenidas y apreciadas. Para contribuir:
 
-1. 🍴 Fork del repositorio
-2. 🔨 Crea una rama para tu feature (`git checkout -b feature/NuevaFuncionalidad`)
-3. 💾 Commit tus cambios (`git commit -m 'Agregar nueva funcionalidad'`)
-4. 📤 Push a la rama (`git push origin feature/NuevaFuncionalidad`)
-5. 🎯 Abre un Pull Request
+1. Fork del repositorio
+2. Crea una rama para tu feature (`git checkout -b feature/NuevaFuncionalidad`)
+3. Commit tus cambios (`git commit -m 'Agregar nueva funcionalidad'`)
+4. Push a la rama (`git push origin feature/NuevaFuncionalidad`)
+5. Abre un Pull Request
 
 ---
 
-## 📄 Licencia
+## Licencia
 
 Este proyecto está bajo la licencia MIT. Ver el archivo `LICENSE` para más detalles.
 
 ---
 
-## 📧 Soporte y Contacto
+## Soporte y Contacto
 
-- 🐛 **Reportar bugs:** [Abrir un issue](https://github.com/Vania-Janet/llm-essay-reviewer/issues)
-- 💡 **Sugerencias:** [Iniciar una discusión](https://github.com/Vania-Janet/llm-essay-reviewer/discussions)
-- 📧 **Email:** [Contacto directo](mailto:tu-email@ejemplo.com)
+- **Reportar bugs:** [Abrir un issue](https://github.com/Vania-Janet/llm-essay-reviewer/issues)
+- **Sugerencias:** [Iniciar una discusión](https://github.com/Vania-Janet/llm-essay-reviewer/discussions)
+- **Email:** [Contacto directo](mailto:tu-email@ejemplo.com)
 
 ---
 
-## 🌟 Agradecimientos
+## Agradecimientos
 
-Desarrollado con ❤️ utilizando tecnologías de vanguardia en IA y procesamiento de lenguaje natural.
+Desarrollado utilizando tecnologías de vanguardia en IA y procesamiento de lenguaje natural.
 
 **Powered by:**
 - [LangChain](https://langchain.com/)
@@ -392,6 +395,6 @@ Desarrollado con ❤️ utilizando tecnologías de vanguardia en IA y procesamie
 
 <div align="center">
 
-**⭐ Si este proyecto te fue útil, considera darle una estrella ⭐**
+**Si este proyecto te fue útil, considera darle una estrella en GitHub**
 
 </div>

@@ -13,6 +13,10 @@ sys.path.append(str(Path(__file__).parent.parent))
 from agent import EvaluadorEnsayos
 from pdf_processor import PDFProcessor
 
+# Importar para el chat
+from langchain_openai import ChatOpenAI
+from langchain.prompts import ChatPromptTemplate
+
 app = Flask(__name__, static_folder='.')
 app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16MB max file size
 app.config['UPLOAD_FOLDER'] = Path(__file__).parent / 'uploads'
@@ -23,6 +27,13 @@ app.config['UPLOAD_FOLDER'].mkdir(exist_ok=True)
 # Inicializar el evaluador y el procesador de PDFs
 evaluador = EvaluadorEnsayos()
 pdf_processor = PDFProcessor()
+
+# Inicializar LLM para el chat
+chat_llm = ChatOpenAI(
+    model="gpt-4o",
+    temperature=0.7,
+    api_key=os.getenv("OPENAI_API_KEY")
+)
 
 
 @app.route('/')
@@ -107,6 +118,93 @@ def evaluate():
         print(f"Error al procesar el ensayo: {str(e)}")
         return jsonify({
             'error': f'Error al procesar el ensayo: {str(e)}'
+        }), 500
+
+
+@app.route('/chat', methods=['POST'])
+def chat():
+    """Endpoint para el chat de consultas sobre la evaluación."""
+    try:
+        data = request.json
+        message = data.get('message', '')
+        evaluation = data.get('evaluation', {})
+        
+        if not message:
+            return jsonify({'error': 'No se proporcionó un mensaje'}), 400
+        
+        if not evaluation:
+            return jsonify({'error': 'No hay evaluación disponible'}), 400
+        
+        # Construir contexto de la evaluación
+        contexto_evaluacion = f"""
+EVALUACIÓN DEL ENSAYO:
+
+Puntuación Total: {evaluation.get('puntuacion_total', 'N/A')}/5.00
+
+Criterios Evaluados:
+
+1. Calidad Técnica y Rigor Académico (20%):
+   - Calificación: {evaluation.get('calidad_tecnica', {}).get('calificacion', 'N/A')}/5
+   - Comentario: {evaluation.get('calidad_tecnica', {}).get('comentario', 'N/A')}
+
+2. Creatividad y Originalidad (20%):
+   - Calificación: {evaluation.get('creatividad', {}).get('calificacion', 'N/A')}/5
+   - Comentario: {evaluation.get('creatividad', {}).get('comentario', 'N/A')}
+
+3. Vinculación con Ejes Temáticos (15%):
+   - Calificación: {evaluation.get('vinculacion_tematica', {}).get('calificacion', 'N/A')}/5
+   - Comentario: {evaluation.get('vinculacion_tematica', {}).get('comentario', 'N/A')}
+
+4. Bienestar Colectivo y Responsabilidad Social (20%):
+   - Calificación: {evaluation.get('bienestar_colectivo', {}).get('calificacion', 'N/A')}/5
+   - Comentario: {evaluation.get('bienestar_colectivo', {}).get('comentario', 'N/A')}
+
+5. Potencial de Impacto y Publicación (20%):
+   - Calificación: {evaluation.get('potencial_impacto', {}).get('calificacion', 'N/A')}/5
+   - Comentario: {evaluation.get('potencial_impacto', {}).get('comentario', 'N/A')}
+
+Comentario General: {evaluation.get('comentario_general', 'N/A')}
+"""
+        
+        # Crear el prompt para el chat
+        prompt = ChatPromptTemplate.from_messages([
+            ("system", """Eres un asistente académico experto y profesional que ayuda a usuarios a comprender 
+evaluaciones de ensayos académicos. Tu tono debe ser formal, respetuoso y constructivo.
+
+Tus responsabilidades incluyen:
+- Responder preguntas específicas sobre la evaluación realizada
+- Aclarar comentarios y calificaciones de los diferentes criterios
+- Proporcionar sugerencias concretas para mejorar el ensayo
+- Explicar el sistema de evaluación y los criterios utilizados
+- Ofrecer orientación académica profesional
+
+IMPORTANTE:
+- Mantén un tono formal y profesional en todo momento
+- Proporciona respuestas claras, concisas y bien estructuradas
+- Cuando des sugerencias, sé específico y constructivo
+- Si el usuario pregunta algo fuera del contexto de la evaluación, redirige cortésmente a temas académicos relevantes
+- No inventes información que no esté en la evaluación
+
+Contexto de la evaluación actual:
+{contexto}
+
+Responde la siguiente consulta del usuario de manera profesional y útil."""),
+            ("user", "{mensaje}")
+        ])
+        
+        # Generar respuesta
+        chain = prompt | chat_llm
+        respuesta = chain.invoke({
+            "contexto": contexto_evaluacion,
+            "mensaje": message
+        })
+        
+        return jsonify({'response': respuesta.content})
+        
+    except Exception as e:
+        print(f"Error en el chat: {str(e)}")
+        return jsonify({
+            'error': f'Error al procesar la consulta: {str(e)}'
         }), 500
 
 

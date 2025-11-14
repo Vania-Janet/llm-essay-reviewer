@@ -11,13 +11,33 @@ const processingSection = document.getElementById('processingSection');
 const resultsSection = document.getElementById('resultsSection');
 const newEvaluationBtn = document.getElementById('newEvaluationBtn');
 
+// Chat elements
+const chatPanel = document.getElementById('chatPanel');
+const chatToggle = document.getElementById('chatToggle');
+const chatMessages = document.getElementById('chatMessages');
+const chatInput = document.getElementById('chatInput');
+const chatSendBtn = document.getElementById('chatSendBtn');
+const chatStatus = document.getElementById('chatStatus');
+
 let selectedFile = null;
+let currentEvaluation = null;
+let currentEssayText = null;
 
 // Event Listeners
 selectFileBtn.addEventListener('click', () => fileInput.click());
 fileInput.addEventListener('change', handleFileSelect);
 evaluateBtn.addEventListener('click', evaluateEssay);
 newEvaluationBtn.addEventListener('click', resetEvaluation);
+
+// Chat event listeners
+chatToggle.addEventListener('click', toggleChat);
+chatSendBtn.addEventListener('click', sendChatMessage);
+chatInput.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+        e.preventDefault();
+        sendChatMessage();
+    }
+});
 
 // Drag and Drop
 dropZone.addEventListener('click', () => fileInput.click());
@@ -99,8 +119,14 @@ async function evaluateEssay() {
 
         const result = await response.json();
         
+        // Guardar evaluación y texto para el chat
+        currentEvaluation = result;
+        
         // Mostrar resultados
         displayResults(result);
+        
+        // Habilitar chat
+        enableChat();
     } catch (error) {
         console.error('Error:', error);
         alert('Hubo un error al procesar el ensayo. Por favor, intenta nuevamente.');
@@ -199,6 +225,122 @@ function resetEvaluation() {
     document.getElementById('generalComment').style.display = 'none';
     document.getElementById('generalCommentText').textContent = '';
     
+    // Deshabilitar y limpiar chat
+    disableChat();
+    
     // Scroll al inicio
     window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+// Chat functionality
+function toggleChat() {
+    chatPanel.classList.toggle('minimized');
+    const icon = chatToggle.querySelector('svg path');
+    
+    if (chatPanel.classList.contains('minimized')) {
+        icon.setAttribute('d', 'M19 9l-7 7-7-7');
+    } else {
+        icon.setAttribute('d', 'M6 18L18 6M6 6l12 12');
+    }
+}
+
+function enableChat() {
+    chatInput.disabled = false;
+    chatSendBtn.disabled = false;
+    chatInput.placeholder = 'Escriba su consulta sobre la evaluación...';
+    
+    // Agregar mensaje de bienvenida contextual
+    addChatMessage('assistant', 
+        'La evaluación ha sido completada. Ahora puede realizar consultas específicas sobre los resultados, ' +
+        'solicitar aclaraciones sobre algún criterio, o pedir recomendaciones para mejorar el ensayo.'
+    );
+}
+
+function disableChat() {
+    chatInput.disabled = true;
+    chatSendBtn.disabled = true;
+    chatInput.value = '';
+    chatInput.placeholder = 'Primero debe evaluar un ensayo...';
+    currentEvaluation = null;
+    currentEssayText = null;
+    
+    // Limpiar mensajes excepto el inicial
+    const messages = chatMessages.querySelectorAll('.chat-message');
+    messages.forEach((msg, index) => {
+        if (index > 0) msg.remove();
+    });
+}
+
+function addChatMessage(role, content) {
+    const messageDiv = document.createElement('div');
+    messageDiv.className = `chat-message ${role}`;
+    
+    const avatar = document.createElement('div');
+    avatar.className = 'message-avatar';
+    avatar.textContent = role === 'user' ? 'UD' : 'IA';
+    
+    const contentDiv = document.createElement('div');
+    contentDiv.className = 'message-content';
+    
+    // Parsear saltos de línea
+    const paragraphs = content.split('\n').filter(p => p.trim());
+    paragraphs.forEach(p => {
+        const para = document.createElement('p');
+        para.textContent = p;
+        contentDiv.appendChild(para);
+    });
+    
+    messageDiv.appendChild(avatar);
+    messageDiv.appendChild(contentDiv);
+    chatMessages.appendChild(messageDiv);
+    
+    // Scroll al último mensaje
+    chatMessages.scrollTop = chatMessages.scrollHeight;
+}
+
+async function sendChatMessage() {
+    const message = chatInput.value.trim();
+    
+    if (!message || !currentEvaluation) return;
+    
+    // Agregar mensaje del usuario
+    addChatMessage('user', message);
+    chatInput.value = '';
+    
+    // Mostrar estado de carga
+    chatSendBtn.disabled = true;
+    chatStatus.style.display = 'flex';
+    
+    try {
+        // Enviar al backend
+        const response = await fetch('/chat', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                message: message,
+                evaluation: currentEvaluation
+            })
+        });
+        
+        if (!response.ok) {
+            throw new Error('Error al procesar la consulta');
+        }
+        
+        const result = await response.json();
+        
+        // Agregar respuesta del asistente
+        addChatMessage('assistant', result.response);
+        
+    } catch (error) {
+        console.error('Error:', error);
+        addChatMessage('assistant', 
+            'Disculpe, ha ocurrido un error al procesar su consulta. Por favor, intente nuevamente.'
+        );
+    } finally {
+        chatStatus.style.display = 'none';
+        chatSendBtn.disabled = false;
+        chatInput.focus();
+    }
 }
