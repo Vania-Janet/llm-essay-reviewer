@@ -44,6 +44,7 @@ let currentEvaluation = null;
 let currentEssayText = null;
 let isEditMode = false;
 let selectedEssays = new Set();
+let currentFileName = '';  // Para almacenar el nombre del archivo evaluado
 
 // Event Listeners
 selectFileBtn.addEventListener('click', () => fileInput.click());
@@ -122,6 +123,7 @@ function handleFileSelect(e) {
 
 function handleFile(file) {
     selectedFile = file;
+    currentFileName = file.name.replace('.pdf', '');  // Guardar nombre sin extensión
     fileName.textContent = file.name;
     fileSize.textContent = formatFileSize(file.size);
     
@@ -555,217 +557,174 @@ function downloadReport() {
         return;
     }
     
-    // Update evaluation from current DOM state
+    // Actualizar evaluación desde el DOM
     updateEvaluationFromDOM();
     
-    // Generate HTML report
-    const html = generateHTMLReport(currentEvaluation);
+    // Crear el PDF con jsPDF
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF('p', 'mm', 'a4');
     
-    // Create blob and download
-    const blob = new Blob([html], { type: 'text/html' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `evaluacion_ensayo_${new Date().toISOString().split('T')[0]}.html`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-}
-
-function generateHTMLReport(evaluation) {
-    const date = new Date().toLocaleDateString('es-ES', {
+    const pageWidth = doc.internal.pageSize.getWidth();
+    const pageHeight = doc.internal.pageSize.getHeight();
+    const margin = 20;
+    const maxWidth = pageWidth - (2 * margin);
+    let yPos = margin;
+    
+    // Función para agregar nueva página si es necesario
+    const checkPageBreak = (neededSpace) => {
+        if (yPos + neededSpace > pageHeight - margin) {
+            doc.addPage();
+            yPos = margin;
+            return true;
+        }
+        return false;
+    };
+    
+    // Función para texto con wrap
+    const addText = (text, fontSize, isBold = false, color = [0, 0, 0]) => {
+        doc.setFontSize(fontSize);
+        doc.setFont('helvetica', isBold ? 'bold' : 'normal');
+        doc.setTextColor(...color);
+        const lines = doc.splitTextToSize(text, maxWidth);
+        
+        lines.forEach((line, index) => {
+            if (index > 0 || checkPageBreak(fontSize * 0.5)) {
+                // Espacio ya manejado
+            }
+            doc.text(line, margin, yPos);
+            yPos += fontSize * 0.5;
+        });
+        yPos += 3;
+    };
+    
+    // Encabezado
+    doc.setFillColor(41, 52, 109);
+    doc.rect(0, 0, pageWidth, 40, 'F');
+    doc.setTextColor(255, 255, 255);
+    doc.setFontSize(22);
+    doc.setFont('helvetica', 'bold');
+    doc.text('Reporte de Evaluación de Ensayo', pageWidth / 2, 20, { align: 'center' });
+    
+    doc.setFontSize(10);
+    doc.setFont('helvetica', 'normal');
+    const date = new Date().toLocaleDateString('es-MX', {
         year: 'numeric',
         month: 'long',
-        day: 'numeric'
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+    });
+    doc.text(`Generado el ${date}`, pageWidth / 2, 30, { align: 'center' });
+    
+    yPos = 50;
+    
+    // Nombre del archivo
+    doc.setTextColor(0, 0, 0);
+    doc.setFontSize(14);
+    doc.setFont('helvetica', 'bold');
+    doc.text(`Ensayo: ${currentFileName || 'Sin nombre'}`, margin, yPos);
+    yPos += 10;
+    
+    // Puntuación total con fondo
+    checkPageBreak(30);
+    doc.setFillColor(221, 218, 54);
+    doc.roundedRect(margin, yPos, maxWidth, 25, 3, 3, 'F');
+    doc.setFontSize(16);
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(41, 52, 109);
+    doc.text('Puntuación Total', pageWidth / 2, yPos + 8, { align: 'center' });
+    doc.setFontSize(28);
+    doc.text(`${currentEvaluation.puntuacion_total.toFixed(2)}/5.00`, pageWidth / 2, yPos + 20, { align: 'center' });
+    yPos += 35;
+    
+    // Criterios de evaluación
+    const criterios = [
+        { nombre: '📝 Calidad Técnica y Rigor Académico', data: currentEvaluation.calidad_tecnica, peso: '25%' },
+        { nombre: '🎨 Creatividad y Originalidad', data: currentEvaluation.creatividad, peso: '20%' },
+        { nombre: '🎯 Vinculación con Ejes Temáticos', data: currentEvaluation.vinculacion_tematica, peso: '15%' },
+        { nombre: '🌍 Bienestar Colectivo', data: currentEvaluation.bienestar_colectivo, peso: '20%' },
+        { nombre: '✨ Potencial de Impacto', data: currentEvaluation.potencial_impacto, peso: '20%' }
+    ];
+    
+    criterios.forEach((criterio, index) => {
+        checkPageBreak(40);
+        
+        // Línea separadora
+        if (index > 0) {
+            doc.setDrawColor(200, 200, 200);
+            doc.line(margin, yPos, pageWidth - margin, yPos);
+            yPos += 8;
+        }
+        
+        // Título del criterio
+        doc.setFontSize(14);
+        doc.setFont('helvetica', 'bold');
+        doc.setTextColor(41, 52, 109);
+        doc.text(criterio.nombre, margin, yPos);
+        
+        // Peso y calificación
+        doc.setFontSize(12);
+        doc.setTextColor(100, 100, 100);
+        doc.text(`Peso: ${criterio.peso}`, pageWidth - margin - 30, yPos, { align: 'right' });
+        
+        doc.setFontSize(16);
+        doc.setFont('helvetica', 'bold');
+        doc.setTextColor(221, 218, 54);
+        doc.text(`${criterio.data.calificacion}/5`, pageWidth - margin, yPos, { align: 'right' });
+        yPos += 8;
+        
+        // Comentario
+        doc.setFontSize(10);
+        doc.setFont('helvetica', 'normal');
+        doc.setTextColor(60, 60, 60);
+        const comentarioLines = doc.splitTextToSize(criterio.data.comentario, maxWidth);
+        comentarioLines.forEach(line => {
+            checkPageBreak(5);
+            doc.text(line, margin, yPos);
+            yPos += 5;
+        });
+        yPos += 5;
     });
     
-    return `<!DOCTYPE html>
-<html lang="es">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Reporte de Evaluación - ${date}</title>
-    <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            line-height: 1.6;
-            color: #2c3e50;
-            background: #f8f9fa;
-            padding: 2rem;
-        }
-        .container {
-            max-width: 900px;
-            margin: 0 auto;
-            background: white;
-            padding: 3rem;
-            border-radius: 12px;
-            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
-        }
-        .header {
-            text-align: center;
-            margin-bottom: 3rem;
-            padding-bottom: 2rem;
-            border-bottom: 3px solid #ddda36;
-        }
-        .header h1 {
-            color: #29346d;
-            font-size: 2.5rem;
-            margin-bottom: 0.5rem;
-        }
-        .header .date {
-            color: #6c757d;
-            font-size: 1rem;
-        }
-        .score-summary {
-            background: linear-gradient(135deg, #29346d 0%, #ddda36 100%);
-            color: white;
-            padding: 2rem;
-            border-radius: 12px;
-            text-align: center;
-            margin-bottom: 2rem;
-        }
-        .score-summary h2 {
-            font-size: 1.5rem;
-            margin-bottom: 1rem;
-            opacity: 0.95;
-        }
-        .score-summary .total {
-            font-size: 4rem;
-            font-weight: 700;
-        }
-        .criterion {
-            background: #f8f9fa;
-            padding: 1.5rem;
-            border-radius: 8px;
-            margin-bottom: 1.5rem;
-            border-left: 4px solid #ddda36;
-        }
-        .criterion-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 1rem;
-            padding-bottom: 0.75rem;
-            border-bottom: 1px solid #e0e0e0;
-        }
-        .criterion-title {
-            font-size: 1.2rem;
-            font-weight: 600;
-            color: #29346d;
-        }
-        .criterion-score {
-            font-size: 1.5rem;
-            font-weight: 700;
-            color: #29346d;
-        }
-        .criterion-comment {
-            color: #6c757d;
-            line-height: 1.7;
-        }
-        .general-comment {
-            background: #f8f9fa;
-            padding: 2rem;
-            border-radius: 8px;
-            border-left: 4px solid #29346d;
-            margin-top: 2rem;
-        }
-        .general-comment h3 {
-            color: #29346d;
-            margin-bottom: 1rem;
-        }
-        .footer {
-            margin-top: 3rem;
-            padding-top: 2rem;
-            border-top: 1px solid #e0e0e0;
-            text-align: center;
-            color: #6c757d;
-            font-size: 0.9rem;
-        }
-        @media print {
-            body { padding: 0; background: white; }
-            .container { box-shadow: none; }
-        }
-    </style>
-</head>
-<body>
-    <div class="container">
-        <div class="header">
-            <h1>Reporte de Evaluación de Ensayo</h1>
-            <p class="date">Generado el ${date}</p>
-        </div>
+    // Comentario general
+    if (currentEvaluation.comentario_general) {
+        checkPageBreak(30);
+        doc.setDrawColor(221, 218, 54);
+        doc.setLineWidth(0.5);
+        doc.line(margin, yPos, pageWidth - margin, yPos);
+        yPos += 8;
         
-        <div class="score-summary">
-            <h2>Puntuación Total</h2>
-            <div class="total">${evaluation.puntuacion_total.toFixed(2)}/5.00</div>
-        </div>
+        doc.setFontSize(14);
+        doc.setFont('helvetica', 'bold');
+        doc.setTextColor(41, 52, 109);
+        doc.text('Comentario General', margin, yPos);
+        yPos += 8;
         
-        <div class="criterion">
-            <div class="criterion-header">
-                <span class="criterion-title">📝 Calidad Técnica y Rigor Académico</span>
-                <span class="criterion-score">${evaluation.calidad_tecnica.calificacion}/5</span>
-            </div>
-            <p class="criterion-comment">${evaluation.calidad_tecnica.comentario}</p>
-        </div>
-        
-        <div class="criterion">
-            <div class="criterion-header">
-                <span class="criterion-title">🎨 Creatividad y Originalidad</span>
-                <span class="criterion-score">${evaluation.creatividad.calificacion}/5</span>
-            </div>
-            <p class="criterion-comment">${evaluation.creatividad.comentario}</p>
-        </div>
-        
-        <div class="criterion">
-            <div class="criterion-header">
-                <span class="criterion-title">🎯 Vinculación con Ejes Temáticos</span>
-                <span class="criterion-score">${evaluation.vinculacion_tematica.calificacion}/5</span>
-            </div>
-            <p class="criterion-comment">${evaluation.vinculacion_tematica.comentario}</p>
-        </div>
-        
-        <div class="criterion">
-            <div class="criterion-header">
-                <span class="criterion-title">🌍 Bienestar Colectivo y Responsabilidad Social</span>
-                <span class="criterion-score">${evaluation.bienestar_colectivo.calificacion}/5</span>
-            </div>
-            <p class="criterion-comment">${evaluation.bienestar_colectivo.comentario}</p>
-        </div>
-        
-        <div class="criterion">
-            <div class="criterion-header">
-                <span class="criterion-title">✨ Potencial de Impacto y Publicación</span>
-                <span class="criterion-score">${evaluation.potencial_impacto.calificacion}/5</span>
-            </div>
-            <p class="criterion-comment">${evaluation.potencial_impacto.comentario}</p>
-        </div>
-        
-        ${evaluation.comentario_general ? `
-        <div class="general-comment">
-            <h3>Comentario General</h3>
-            <p>${evaluation.comentario_general}</p>
-        </div>
-        ` : ''}
-        
-        <div class="footer">
-            <p>Sistema de Evaluación Inteligente de Ensayos</p>
-            <p>Powered by IA · ${date}</p>
-        </div>
-    </div>
-</body>
-</html>
-    `;
-
-    const blob = new Blob([html], { type: 'text/html' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `reporte_evaluacion_${date}.html`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
+        doc.setFontSize(10);
+        doc.setFont('helvetica', 'normal');
+        doc.setTextColor(60, 60, 60);
+        const generalLines = doc.splitTextToSize(currentEvaluation.comentario_general, maxWidth);
+        generalLines.forEach(line => {
+            checkPageBreak(5);
+            doc.text(line, margin, yPos);
+            yPos += 5;
+        });
+    }
+    
+    // Pie de página en todas las páginas
+    const pageCount = doc.internal.getNumberOfPages();
+    for (let i = 1; i <= pageCount; i++) {
+        doc.setPage(i);
+        doc.setFontSize(8);
+        doc.setTextColor(150, 150, 150);
+        doc.setFont('helvetica', 'normal');
+        doc.text('Sistema de Evaluación de Ensayos con IA', pageWidth / 2, pageHeight - 10, { align: 'center' });
+        doc.text(`Página ${i} de ${pageCount}`, pageWidth - margin, pageHeight - 10, { align: 'right' });
+    }
+    
+    // Descargar con el nombre del archivo
+    const pdfFileName = currentFileName ? `Evaluacion_${currentFileName}.pdf` : `Evaluacion_${date.split(',')[0].replace(/\s/g, '_')}.pdf`;
+    doc.save(pdfFileName);
 }
 
 // Funciones para historial y comparación
