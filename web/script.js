@@ -30,6 +30,10 @@ const editGeneralCommentBtn = document.getElementById('editGeneralCommentBtn');
 
 // History and comparison elements
 const essaysHistorySection = document.getElementById('essaysHistorySection');
+const essaysLibrarySection = document.getElementById('essaysLibrarySection');
+const libraryList = document.getElementById('libraryList');
+const compareLibraryBtn = document.getElementById('compareLibraryBtn');
+const uploadNewBtn = document.getElementById('uploadNewBtn');
 const viewHistoryBtn = document.getElementById('viewHistoryBtn');
 const closeHistoryBtn = document.getElementById('closeHistoryBtn');
 const essaysList = document.getElementById('essaysList');
@@ -45,6 +49,7 @@ let currentEssayText = null;
 let isEditMode = false;
 let selectedEssays = new Set();
 let currentFileName = '';  // Para almacenar el nombre del archivo evaluado
+let allEssays = [];  // Para almacenar todos los ensayos cargados
 
 // Event Listeners
 selectFileBtn.addEventListener('click', () => fileInput.click());
@@ -73,10 +78,26 @@ saveScoreBtn.addEventListener('click', saveTotalScore);
 editGeneralCommentBtn.addEventListener('click', toggleGeneralCommentEdit);
 
 // History and comparison event listeners
-viewHistoryBtn.addEventListener('click', showEssaysHistory);
-closeHistoryBtn.addEventListener('click', hideEssaysHistory);
-compareSelectedBtn.addEventListener('click', compareEssays);
-closeComparisonBtn.addEventListener('click', hideComparison);
+if (viewHistoryBtn) viewHistoryBtn.addEventListener('click', showEssaysHistory);
+if (closeHistoryBtn) closeHistoryBtn.addEventListener('click', hideEssaysHistory);
+if (compareSelectedBtn) compareSelectedBtn.addEventListener('click', compareEssays);
+if (closeComparisonBtn) closeComparisonBtn.addEventListener('click', hideComparison);
+if (compareLibraryBtn) compareLibraryBtn.addEventListener('click', compareEssays);
+if (uploadNewBtn) uploadNewBtn.addEventListener('click', showUploadSection);
+
+// Back button event listeners
+const backFromUploadBtn = document.getElementById('backFromUploadBtn');
+const backFromResultsBtn = document.getElementById('backFromResultsBtn');
+const backFromHistoryBtn = document.getElementById('backFromHistoryBtn');
+const backFromComparisonBtn = document.getElementById('backFromComparisonBtn');
+
+if (backFromUploadBtn) backFromUploadBtn.addEventListener('click', returnToLibrary);
+if (backFromResultsBtn) backFromResultsBtn.addEventListener('click', returnToLibrary);
+if (backFromHistoryBtn) backFromHistoryBtn.addEventListener('click', returnToLibrary);
+if (backFromComparisonBtn) backFromComparisonBtn.addEventListener('click', returnToLibrary);
+
+// Cargar biblioteca al iniciar
+window.addEventListener('DOMContentLoaded', loadEssaysLibrary);
 
 // Edit criterion buttons
 document.addEventListener('click', (e) => {
@@ -237,13 +258,32 @@ function displayResults(evaluation) {
         displayFragments('fragments4', evaluation.bienestar_colectivo.fragmentos_destacados);
     }
 
-    // Criterio 5: Potencial de Impacto
-    if (evaluation.potencial_impacto) {
+    // Criterio 5: Uso Responsable de IA
+    if (evaluation.uso_responsable_ia) {
         document.getElementById('score5').textContent = 
-            `${evaluation.potencial_impacto.calificacion}/5`;
+            `${evaluation.uso_responsable_ia.calificacion}/5`;
         document.getElementById('comment5').textContent = 
+            evaluation.uso_responsable_ia.comentario;
+        displayFragments('fragments5', evaluation.uso_responsable_ia.fragmentos_destacados);
+    }
+    
+    // Mostrar advertencia si no tiene anexo
+    const anexoWarning = document.getElementById('anexoWarning');
+    if (anexoWarning) {
+        if (evaluation.tiene_anexo === false) {
+            anexoWarning.style.display = 'block';
+        } else {
+            anexoWarning.style.display = 'none';
+        }
+    }
+
+    // Criterio 6: Potencial de Impacto
+    if (evaluation.potencial_impacto) {
+        document.getElementById('score6').textContent = 
+            `${evaluation.potencial_impacto.calificacion}/5`;
+        document.getElementById('comment6').textContent = 
             evaluation.potencial_impacto.comentario;
-        displayFragments('fragments5', evaluation.potencial_impacto.fragmentos_destacados);
+        displayFragments('fragments6', evaluation.potencial_impacto.fragmentos_destacados);
     }
 
     // Comentario general (si existe)
@@ -296,20 +336,34 @@ function displayFragments(containerId, fragments) {
 function resetEvaluation() {
     selectedFile = null;
     fileInput.value = '';
+    currentEvaluation = null;
+    currentEssayText = null;
+    currentFileName = '';
     
-    uploadSection.style.display = 'block';
+    // Volver a mostrar la biblioteca
+    essaysLibrarySection.style.display = 'block';
+    uploadSection.style.display = 'none';
     dropZone.style.display = 'block';
     fileInfo.style.display = 'none';
     processingSection.style.display = 'none';
     resultsSection.style.display = 'none';
     
+    // Recargar biblioteca
+    loadEssaysLibrary();
+    
     // Limpiar resultados
     document.getElementById('totalScore').textContent = '0.00';
     document.getElementById('scoreFill').style.width = '0%';
     
-    for (let i = 1; i <= 5; i++) {
+    for (let i = 1; i <= 6; i++) {
         document.getElementById(`score${i}`).textContent = '-';
         document.getElementById(`comment${i}`).textContent = '';
+    }
+    
+    // Ocultar advertencia de anexo
+    const anexoWarning = document.getElementById('anexoWarning');
+    if (anexoWarning) {
+        anexoWarning.style.display = 'none';
     }
     
     document.getElementById('generalComment').style.display = 'none';
@@ -391,7 +445,24 @@ function addChatMessage(role, content) {
 async function sendChatMessage() {
     const message = chatInput.value.trim();
     
-    if (!message || !currentEvaluation) return;
+    if (!message) return;
+    
+    // Determinar qué ensayos están en contexto
+    let essayIds = [];
+    if (selectedEssays.size > 0) {
+        // Si hay ensayos seleccionados, usar esos
+        essayIds = Array.from(selectedEssays);
+    } else if (currentEvaluation && currentEvaluation.id) {
+        // Si hay un ensayo individual visualizado, usar ese
+        essayIds = [currentEvaluation.id];
+    }
+    
+    if (essayIds.length === 0) {
+        addChatMessage('assistant', 
+            'Por favor, seleccione al menos un ensayo de la biblioteca para poder responder sus consultas.'
+        );
+        return;
+    }
     
     // Agregar mensaje del usuario
     addChatMessage('user', message);
@@ -402,7 +473,6 @@ async function sendChatMessage() {
     chatStatus.style.display = 'flex';
     
     try {
-        // Enviar al backend con el texto del ensayo
         const response = await fetch('/chat', {
             method: 'POST',
             headers: {
@@ -410,8 +480,7 @@ async function sendChatMessage() {
             },
             body: JSON.stringify({
                 message: message,
-                evaluation: currentEvaluation,
-                essay_text: currentEssayText
+                essay_ids: essayIds
             })
         });
         
@@ -560,6 +629,17 @@ function downloadReport() {
     // Actualizar evaluación desde el DOM
     updateEvaluationFromDOM();
     
+    // Función helper para limpiar texto y evitar problemas de codificación
+    const cleanTextForPDF = (text) => {
+        if (!text) return '';
+        return text
+            .normalize('NFD') // Descomponer caracteres acentuados
+            .replace(/[\u0300-\u036f]/g, '') // Eliminar marcas diacríticas
+            .replace(/[^\x00-\x7F]/g, '') // Eliminar caracteres no ASCII restantes
+            .replace(/\s+/g, ' ') // Normalizar espacios
+            .trim();
+    };
+    
     // Crear el PDF con jsPDF
     const { jsPDF } = window.jspdf;
     const doc = new jsPDF('p', 'mm', 'a4');
@@ -582,15 +662,15 @@ function downloadReport() {
     
     // Función para texto con wrap
     const addText = (text, fontSize, isBold = false, color = [0, 0, 0]) => {
+        const cleanText = cleanTextForPDF(text);
+        
         doc.setFontSize(fontSize);
         doc.setFont('helvetica', isBold ? 'bold' : 'normal');
         doc.setTextColor(...color);
-        const lines = doc.splitTextToSize(text, maxWidth);
+        const lines = doc.splitTextToSize(cleanText, maxWidth);
         
-        lines.forEach((line, index) => {
-            if (index > 0 || checkPageBreak(fontSize * 0.5)) {
-                // Espacio ya manejado
-            }
+        lines.forEach((line) => {
+            checkPageBreak(fontSize * 0.5 + 2);
             doc.text(line, margin, yPos);
             yPos += fontSize * 0.5;
         });
@@ -603,7 +683,7 @@ function downloadReport() {
     doc.setTextColor(255, 255, 255);
     doc.setFontSize(22);
     doc.setFont('helvetica', 'bold');
-    doc.text('Reporte de Evaluación de Ensayo', pageWidth / 2, 20, { align: 'center' });
+    doc.text('Reporte de Evaluacion de Ensayo', pageWidth / 2, 20, { align: 'center' });
     
     doc.setFontSize(10);
     doc.setFont('helvetica', 'normal');
@@ -632,18 +712,18 @@ function downloadReport() {
     doc.setFontSize(16);
     doc.setFont('helvetica', 'bold');
     doc.setTextColor(41, 52, 109);
-    doc.text('Puntuación Total', pageWidth / 2, yPos + 8, { align: 'center' });
+    doc.text('Puntuacion Total', pageWidth / 2, yPos + 8, { align: 'center' });
     doc.setFontSize(28);
     doc.text(`${currentEvaluation.puntuacion_total.toFixed(2)}/5.00`, pageWidth / 2, yPos + 20, { align: 'center' });
     yPos += 35;
     
-    // Criterios de evaluación
+    // Criterios de evaluación (sin emojis para mejor compatibilidad PDF)
     const criterios = [
-        { nombre: '📝 Calidad Técnica y Rigor Académico', data: currentEvaluation.calidad_tecnica, peso: '25%' },
-        { nombre: '🎨 Creatividad y Originalidad', data: currentEvaluation.creatividad, peso: '20%' },
-        { nombre: '🎯 Vinculación con Ejes Temáticos', data: currentEvaluation.vinculacion_tematica, peso: '15%' },
-        { nombre: '🌍 Bienestar Colectivo', data: currentEvaluation.bienestar_colectivo, peso: '20%' },
-        { nombre: '✨ Potencial de Impacto', data: currentEvaluation.potencial_impacto, peso: '20%' }
+        { nombre: 'Calidad Tecnica y Rigor Academico', data: currentEvaluation.calidad_tecnica, peso: '25%' },
+        { nombre: 'Creatividad y Originalidad', data: currentEvaluation.creatividad, peso: '20%' },
+        { nombre: 'Vinculacion con Ejes Tematicos', data: currentEvaluation.vinculacion_tematica, peso: '15%' },
+        { nombre: 'Bienestar Colectivo', data: currentEvaluation.bienestar_colectivo, peso: '20%' },
+        { nombre: 'Potencial de Impacto', data: currentEvaluation.potencial_impacto, peso: '20%' }
     ];
     
     criterios.forEach((criterio, index) => {
@@ -660,7 +740,7 @@ function downloadReport() {
         doc.setFontSize(14);
         doc.setFont('helvetica', 'bold');
         doc.setTextColor(41, 52, 109);
-        doc.text(criterio.nombre, margin, yPos);
+        doc.text(cleanTextForPDF(criterio.nombre), margin, yPos);
         
         // Peso y calificación
         doc.setFontSize(12);
@@ -677,7 +757,7 @@ function downloadReport() {
         doc.setFontSize(10);
         doc.setFont('helvetica', 'normal');
         doc.setTextColor(60, 60, 60);
-        const comentarioLines = doc.splitTextToSize(criterio.data.comentario, maxWidth);
+        const comentarioLines = doc.splitTextToSize(cleanTextForPDF(criterio.data.comentario), maxWidth);
         comentarioLines.forEach(line => {
             checkPageBreak(5);
             doc.text(line, margin, yPos);
@@ -703,7 +783,7 @@ function downloadReport() {
         doc.setFontSize(10);
         doc.setFont('helvetica', 'normal');
         doc.setTextColor(60, 60, 60);
-        const generalLines = doc.splitTextToSize(currentEvaluation.comentario_general, maxWidth);
+        const generalLines = doc.splitTextToSize(cleanTextForPDF(currentEvaluation.comentario_general), maxWidth);
         generalLines.forEach(line => {
             checkPageBreak(5);
             doc.text(line, margin, yPos);
@@ -718,12 +798,13 @@ function downloadReport() {
         doc.setFontSize(8);
         doc.setTextColor(150, 150, 150);
         doc.setFont('helvetica', 'normal');
-        doc.text('Sistema de Evaluación de Ensayos con IA', pageWidth / 2, pageHeight - 10, { align: 'center' });
-        doc.text(`Página ${i} de ${pageCount}`, pageWidth - margin, pageHeight - 10, { align: 'right' });
+        doc.text('Sistema de Evaluacion de Ensayos con IA', pageWidth / 2, pageHeight - 10, { align: 'center' });
+        doc.text(`Pagina ${i} de ${pageCount}`, pageWidth - margin, pageHeight - 10, { align: 'right' });
     }
     
     // Descargar con el nombre del archivo
-    const pdfFileName = currentFileName ? `Evaluacion_${currentFileName}.pdf` : `Evaluacion_${date.split(',')[0].replace(/\s/g, '_')}.pdf`;
+    const cleanFileName = cleanTextForPDF(currentFileName || 'Sin_nombre');
+    const pdfFileName = `Evaluacion_${cleanFileName}.pdf`.replace(/\s+/g, '_');
     doc.save(pdfFileName);
 }
 
@@ -823,28 +904,40 @@ async function compareEssays() {
         const result = await response.json();
         
         // Mostrar resumen de ensayos comparados
-        const essaysSummary = result.ensayos.map((essay, index) => `
-            <div class="essay-comparison-card">
-                <h4>Ensayo ${index + 1}: ${essay.nombre_archivo}</h4>
-                <p><strong>Puntuación Total:</strong> ${essay.puntuacion_total.toFixed(2)}/5.00</p>
-                <p><strong>Fecha:</strong> ${new Date(essay.fecha_evaluacion).toLocaleString('es-MX')}</p>
+        const essaysSummary = result.ensayos
+            .sort((a, b) => b.puntuacion_total - a.puntuacion_total)
+            .map((essay, index) => `
+            <div class="essay-comparison-card" style="border-left: 4px solid ${index === 0 ? '#ddd436' : index === 1 ? '#29346d' : '#d65a31'}">
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <h4>${index + 1}. ${essay.nombre_archivo.replace('.txt', '').replace('Ensayo_', '').substring(0, 40)}...</h4>
+                    <div class="comparison-score" style="font-size: 1.5rem; padding: 0.5rem 1rem;">${essay.puntuacion_total.toFixed(2)}</div>
+                </div>
+                <p style="margin: 0.5rem 0; color: #6b7280;">📎 ${essay.tiene_anexo ? 'Con Anexo IA' : 'Sin Anexo IA'}</p>
             </div>
         `).join('');
         
-        // Convertir markdown a HTML básico
+        // Convertir markdown a HTML mejorado
         const comparisonHTML = result.comparacion
+            .replace(/^### (.+)$/gm, '<h4>$1</h4>')
+            .replace(/^## (.+)$/gm, '<h3>$1</h3>')
+            .replace(/^# (.+)$/gm, '<h2>$1</h2>')
             .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+            .replace(/^\d+\.\s+(.+)/gm, '<li>$1</li>')
+            .replace(/^-\s+(.+)/gm, '<li>$1</li>')
+            .replace(/(<li>.*?<\/li>\s*)+/gs, '<ul>$&</ul>')
             .replace(/\n\n/g, '</p><p>')
             .replace(/\n/g, '<br>');
         
         comparisonContent.innerHTML = `
             <div class="essays-summary">
-                <h3>Ensayos Comparados</h3>
-                ${essaysSummary}
+                <h3>🏆 Ranking de Ensayos</h3>
+                <div class="essays-grid" style="gap: 0.75rem;">
+                    ${essaysSummary}
+                </div>
             </div>
             <div class="comparison-analysis">
-                <h3>Análisis Comparativo</h3>
-                <p>${comparisonHTML}</p>
+                <h3>📝 Análisis Comparativo</h3>
+                <div class="analysis-content">${comparisonHTML}</div>
             </div>
         `;
         
@@ -857,4 +950,219 @@ async function compareEssays() {
 function hideComparison() {
     comparisonSection.style.display = 'none';
     essaysHistorySection.style.display = 'block';
+}
+
+// Funciones para la biblioteca de ensayos
+async function loadEssaysLibrary() {
+    try {
+        const response = await fetch('/essays');
+        if (!response.ok) throw new Error('Error al cargar ensayos');
+        
+        allEssays = await response.json();
+        
+        if (allEssays.length === 0) {
+            libraryList.innerHTML = `
+                <div style="text-align: center; padding: 3rem; grid-column: 1/-1;">
+                    <p style="font-size: 1.2rem; color: #6b7280; margin-bottom: 1rem;">
+                        📭 No hay ensayos en la biblioteca
+                    </p>
+                    <p style="color: #9ca3af;">
+                        Sube un nuevo ensayo o ejecuta el script de procesamiento batch
+                    </p>
+                </div>
+            `;
+            return;
+        }
+        
+        displayEssaysLibrary(allEssays);
+        
+    } catch (error) {
+        console.error('Error:', error);
+        libraryList.innerHTML = `
+            <div style="text-align: center; padding: 2rem; color: red; grid-column: 1/-1;">
+                Error al cargar la biblioteca: ${error.message}
+            </div>
+        `;
+    }
+}
+
+function displayEssaysLibrary(essays) {
+    // Función para extraer un título limpio del nombre del archivo
+    const extractTitle = (filename) => {
+        // Eliminar extensión
+        let title = filename.replace('.pdf', '').replace('.txt', '');
+        
+        // Formato: "Ensayo_Autor_Titulo..."
+        const parts = title.split('_');
+        
+        if (parts.length >= 3 && parts[0] === 'Ensayo') {
+            // Unir todas las partes después del autor para formar el título
+            const titleParts = parts.slice(2);
+            title = titleParts.join(' ');
+            
+            // Limitar longitud y capitalizar
+            if (title.length > 60) {
+                title = title.substring(0, 60) + '...';
+            }
+        } else if (title.length > 60) {
+            // Si no sigue el formato esperado, simplemente recortar
+            title = title.substring(0, 60) + '...';
+        }
+        
+        return title;
+    };
+    
+    // Función para extraer el autor
+    const extractAuthor = (filename) => {
+        const parts = filename.replace('.pdf', '').replace('.txt', '').split('_');
+        if (parts.length >= 2 && parts[0] === 'Ensayo') {
+            return parts[1];
+        }
+        return 'Desconocido';
+    };
+    
+    libraryList.innerHTML = essays.map(essay => {
+        const anexoIndicator = essay.tiene_anexo 
+            ? '<span class="anexo-indicator anexo-ok">✓ Anexo IA</span>'
+            : '<span class="anexo-indicator anexo-missing">⚠️ Sin Anexo IA</span>';
+        
+        const title = extractTitle(essay.nombre_archivo);
+        const author = extractAuthor(essay.nombre_archivo);
+        
+        return `
+            <div class="essay-card" data-id="${essay.id}">
+                <div class="essay-card-header">
+                    <input type="checkbox" class="essay-card-checkbox" data-id="${essay.id}">
+                    <div class="essay-card-title">${title}</div>
+                </div>
+                <div class="essay-card-author">Por: ${author}</div>
+                <div class="essay-card-score">${essay.puntuacion_total.toFixed(2)}/5.00</div>
+                ${anexoIndicator}
+                <div class="essay-card-meta">
+                    <div class="essay-card-date">
+                        📅 ${new Date(essay.fecha_evaluacion).toLocaleDateString('es-MX', {
+                            year: 'numeric',
+                            month: 'short',
+                            day: 'numeric',
+                            hour: '2-digit',
+                            minute: '2-digit'
+                        })}
+                    </div>
+                </div>
+                <div class="essay-card-preview">${essay.texto_preview}</div>
+                <div class="essay-card-actions">
+                    <button class="btn-view-essay" onclick="viewEssayDetails(${essay.id})">
+                        Ver Detalles
+                    </button>
+                </div>
+            </div>
+        `;
+    }).join('');
+    
+    // Agregar event listeners a los checkboxes
+    document.querySelectorAll('.essay-card-checkbox').forEach(checkbox => {
+        checkbox.addEventListener('change', handleLibrarySelection);
+        checkbox.addEventListener('click', (e) => e.stopPropagation());
+    });
+}
+
+function handleLibrarySelection(e) {
+    e.stopPropagation();
+    const essayId = parseInt(e.target.dataset.id);
+    const essayCard = e.target.closest('.essay-card');
+    
+    if (e.target.checked) {
+        selectedEssays.add(essayId);
+        essayCard.classList.add('selected');
+    } else {
+        selectedEssays.delete(essayId);
+        essayCard.classList.remove('selected');
+    }
+    
+    compareLibraryBtn.disabled = selectedEssays.size < 2;
+    
+    // Actualizar el chatbot con los ensayos seleccionados
+    updateChatbotContext();
+}
+
+async function viewEssayDetails(essayId) {
+    try {
+        const response = await fetch(`/essays/${essayId}`);
+        if (!response.ok) throw new Error('Error al cargar ensayo');
+        
+        const essay = await response.json();
+        
+        // Actualizar variables globales con la estructura de la base de datos
+        currentEvaluation = {
+            id: essay.id,
+            ...essay.evaluacion,  // Extraer la evaluación del objeto
+            nombre_archivo: essay.nombre_archivo
+        };
+        currentEssayText = essay.texto_completo;
+        currentFileName = essay.nombre_archivo.replace('.pdf', '');
+        
+        // Seleccionar solo este ensayo
+        selectedEssays.clear();
+        selectedEssays.add(essayId);
+        
+        // Actualizar UI
+        document.querySelectorAll('.essay-card').forEach(card => {
+            card.classList.remove('selected');
+        });
+        document.querySelectorAll('.essay-card-checkbox').forEach(cb => {
+            cb.checked = cb.dataset.id == essayId;
+        });
+        document.querySelector(`[data-id="${essayId}"]`).closest('.essay-card').classList.add('selected');
+        
+        // Mostrar resultados - displayResults espera el objeto de evaluación
+        displayResults(essay.evaluacion);
+        
+        // Ocultar biblioteca y mostrar resultados
+        essaysLibrarySection.style.display = 'none';
+        uploadSection.style.display = 'none';
+        resultsSection.style.display = 'block';
+        
+        // Habilitar chat
+        enableChat();
+        
+        // Actualizar contexto del chatbot
+        updateChatbotContext();
+        
+    } catch (error) {
+        console.error('Error:', error);
+        alert('Error al cargar los detalles del ensayo');
+    }
+}
+
+function showUploadSection() {
+    essaysLibrarySection.style.display = 'none';
+    uploadSection.style.display = 'block';
+    resultsSection.style.display = 'none';
+}
+
+function returnToLibrary() {
+    // Hide all sections
+    uploadSection.style.display = 'none';
+    resultsSection.style.display = 'none';
+    essaysHistorySection.style.display = 'none';
+    comparisonSection.style.display = 'none';
+    
+    // Show library
+    essaysLibrarySection.style.display = 'block';
+    
+    // Reload library to refresh data
+    loadEssaysLibrary();
+}
+
+function updateChatbotContext() {
+    // Esta función actualiza el contexto del chatbot según los ensayos seleccionados
+    const numSelected = selectedEssays.size;
+    
+    if (numSelected === 0) {
+        chatInput.placeholder = "Selecciona un ensayo para hacer consultas...";
+    } else if (numSelected === 1) {
+        chatInput.placeholder = "Pregunta sobre este ensayo...";
+    } else {
+        chatInput.placeholder = `Pregunta sobre los ${numSelected} ensayos seleccionados...`;
+    }
 }

@@ -16,8 +16,34 @@
 
         <main>
             <div class="main-content">
+            <!-- Sección de biblioteca de ensayos (se muestra al inicio) -->
+            <div class="essays-library-section" id="essaysLibrarySection">
+                <div class="library-header">
+                    <h2>Biblioteca de Ensayos</h2>
+                    <p class="library-subtitle">Selecciona un ensayo para revisar o varios para comparar</p>
+                    <div class="library-actions">
+                        <button class="btn-primary" id="compareLibraryBtn" disabled>
+                            Comparar Seleccionados
+                        </button>
+                        <button class="btn-secondary" id="uploadNewBtn">
+                            ➕ Evaluar Nuevo Ensayo
+                        </button>
+                    </div>
+                </div>
+                <div class="library-list" id="libraryList">
+                    <div class="loader"></div>
+                    <p>Cargando ensayos...</p>
+                </div>
+            </div>
+
             <!-- Sección de historial de ensayos -->
             <div class="essays-history-section" id="essaysHistorySection" style="display: none;">
+                <button class="btn-back" id="backFromHistoryBtn" title="Volver a la biblioteca">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" style="width: 20px; height: 20px;">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+                    </svg>
+                    Volver a Biblioteca
+                </button>
                 <div class="history-header">
                     <h2>Historial de Ensayos Evaluados</h2>
                     <div class="history-actions">
@@ -35,6 +61,12 @@
 
             <!-- Sección de comparación -->
             <div class="comparison-section" id="comparisonSection" style="display: none;">
+                <button class="btn-back" id="backFromComparisonBtn" title="Volver a la biblioteca">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" style="width: 20px; height: 20px;">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+                    </svg>
+                    Volver a Biblioteca
+                </button>
                 <div class="comparison-header">
                     <h2>Comparación de Ensayos</h2>
                     <button class="btn-secondary" id="closeComparisonBtn">Cerrar</button>
@@ -46,6 +78,14 @@
             </div>
 
             <div class="upload-section" id="uploadSection">
+                <div class="upload-header">
+                    <button class="btn-back" id="backFromUploadBtn" title="Volver a la biblioteca">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" style="width: 20px; height: 20px;">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+                        </svg>
+                        Volver a Biblioteca
+                    </button>
+                </div>
                 <div class="drop-zone" id="dropZone">
                     <svg class="upload-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
@@ -76,6 +116,12 @@
             </div>
 
             <div class="results-section" id="resultsSection" style="display: none;">
+                <button class="btn-back" id="backFromResultsBtn" title="Volver a la biblioteca">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" style="width: 20px; height: 20px;">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+                    </svg>
+                    Volver a Biblioteca
+                </button>
                 <div class="results-header">
                     <h2>Resultados de la Evaluación</h2>
                     <div class="header-actions">
@@ -189,18 +235,38 @@
 
                     <div class="criterion-card" data-criterion="5">
                         <div class="criterion-header">
-                            <span class="criterion-icon">✨</span>
-                            <h3>Potencial de Impacto y Publicación</h3>
-                            <span class="criterion-weight">20%</span>
+                            <span class="criterion-icon">🤖</span>
+                            <h3>Uso Responsable de IA</h3>
+                            <span class="criterion-weight">15%</span>
                             <button class="btn-edit-criterion" data-criterion="5" title="Editar criterio">
                                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
                                 </svg>
                             </button>
                         </div>
+                        <div class="anexo-warning" id="anexoWarning" style="display: none;">
+                            <strong style="color: #dc3545;">⚠️ No se encontró anexo de IA verificado para este ensayo</strong>
+                            <p style="margin-top: 5px; font-size: 0.9em;">El criterio de Uso Responsable de IA fue evaluado sin anexo.</p>
+                        </div>
                         <div class="criterion-score" id="score5">-</div>
                         <p class="criterion-comment" id="comment5" contenteditable="false"></p>
                         <div class="fragments-container" id="fragments5"></div>
+                    </div>
+
+                    <div class="criterion-card" data-criterion="6">
+                        <div class="criterion-header">
+                            <span class="criterion-icon">✨</span>
+                            <h3>Potencial de Impacto y Publicación</h3>
+                            <span class="criterion-weight">20%</span>
+                            <button class="btn-edit-criterion" data-criterion="6" title="Editar criterio">
+                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                                </svg>
+                            </button>
+                        </div>
+                        <div class="criterion-score" id="score6">-</div>
+                        <p class="criterion-comment" id="comment6" contenteditable="false"></p>
+                        <div class="fragments-container" id="fragments6"></div>
                     </div>
                 </div>
 
@@ -277,6 +343,7 @@
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
     <script src="script.js"></script>
 </body>
 </html>

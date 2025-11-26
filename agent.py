@@ -7,7 +7,7 @@ from typing import Dict, Any
 from dotenv import load_dotenv
 
 from langchain_openai import ChatOpenAI
-from langchain.prompts import ChatPromptTemplate
+from langchain_core.prompts import ChatPromptTemplate
 from langgraph.graph import StateGraph, END
 
 from models import EstadoEvaluacion, EvaluacionEnsayo, EvaluacionCriterio
@@ -17,6 +17,7 @@ from prompts import (
     PROMPT_CREATIVIDAD,
     PROMPT_VINCULACION_TEMATICA,
     PROMPT_BIENESTAR_COLECTIVO,
+    PROMPT_USO_RESPONSABLE_IA,
     PROMPT_POTENCIAL_IMPACTO,
     PROMPT_COMENTARIO_GENERAL
 )
@@ -53,7 +54,7 @@ class EvaluadorEnsayos:
     
     def _evaluar_calidad_tecnica(self, state: Dict[str, Any]) -> Dict[str, Any]:
         """Nodo: Evalúa calidad técnica y rigor académico."""
-        print("📝 Evaluando: Calidad técnica y rigor académico...")
+        print("Evaluando: Calidad técnica y rigor académico...")
         
         prompt = ChatPromptTemplate.from_messages([
             ("system", PROMPT_SISTEMA),
@@ -72,7 +73,7 @@ class EvaluadorEnsayos:
     
     def _evaluar_creatividad(self, state: Dict[str, Any]) -> Dict[str, Any]:
         """Nodo: Evalúa creatividad y originalidad."""
-        print("🎨 Evaluando: Creatividad y originalidad...")
+        print("Evaluando: Creatividad y originalidad...")
         
         prompt = ChatPromptTemplate.from_messages([
             ("system", PROMPT_SISTEMA),
@@ -110,7 +111,7 @@ class EvaluadorEnsayos:
     
     def _evaluar_bienestar(self, state: Dict[str, Any]) -> Dict[str, Any]:
         """Nodo: Evalúa reflexión sobre bienestar colectivo."""
-        print("🌍 Evaluando: Bienestar colectivo y responsabilidad social...")
+        print("Evaluando: Bienestar colectivo y responsabilidad social...")
         
         prompt = ChatPromptTemplate.from_messages([
             ("system", PROMPT_SISTEMA),
@@ -124,12 +125,37 @@ class EvaluadorEnsayos:
             "calificacion": evaluacion.calificacion,
             "comentario": evaluacion.comentario
         }
+        state["paso_actual"] = "uso_ia"
+        return state
+    
+    def _evaluar_uso_ia(self, state: Dict[str, Any]) -> Dict[str, Any]:
+        """Nodo: Evalúa uso responsable y reflexivo de herramientas de IA."""
+        print("Evaluando: Uso responsable y reflexivo de herramientas de IA...")
+        
+        # Obtener el anexo de IA si está disponible
+        anexo_ia = state.get("anexo_ia", "[NO SE PROPORCIONÓ ANEXO DE IA]")
+        
+        prompt = ChatPromptTemplate.from_messages([
+            ("system", PROMPT_SISTEMA),
+            ("user", PROMPT_USO_RESPONSABLE_IA)
+        ])
+        
+        chain = prompt | self.llm_structured
+        evaluacion = chain.invoke({
+            "ensayo": state["ensayo"],
+            "anexo_ia": anexo_ia
+        })
+        
+        state["uso_responsable_ia"] = {
+            "calificacion": evaluacion.calificacion,
+            "comentario": evaluacion.comentario
+        }
         state["paso_actual"] = "impacto"
         return state
     
     def _evaluar_impacto(self, state: Dict[str, Any]) -> Dict[str, Any]:
         """Nodo: Evalúa potencial de impacto."""
-        print("✨ Evaluando: Potencial de impacto y publicación...")
+        print("Evaluando: Potencial de impacto y publicación...")
         
         prompt = ChatPromptTemplate.from_messages([
             ("system", PROMPT_SISTEMA),
@@ -148,7 +174,7 @@ class EvaluadorEnsayos:
     
     def _generar_comentario_general(self, state: Dict[str, Any]) -> Dict[str, Any]:
         """Nodo: Genera comentario general y ensambla evaluación final."""
-        print("📋 Generando comentario general...")
+        print("Generando comentario general...")
         
         # Preparar resumen de evaluaciones previas
         evaluaciones_previas = f"""
@@ -164,7 +190,10 @@ class EvaluadorEnsayos:
             4. BIENESTAR COLECTIVO: {state['bienestar_colectivo']['calificacion']}/5
             {state['bienestar_colectivo']['comentario']}
 
-            5. POTENCIAL DE IMPACTO: {state['potencial_impacto']['calificacion']}/5
+            5. USO RESPONSABLE DE IA: {state['uso_responsable_ia']['calificacion']}/5
+            {state['uso_responsable_ia']['comentario']}
+
+            6. POTENCIAL DE IMPACTO: {state['potencial_impacto']['calificacion']}/5
             {state['potencial_impacto']['comentario']}
             """
         
@@ -187,6 +216,7 @@ class EvaluadorEnsayos:
             creatividad=EvaluacionCriterio(**state["creatividad"]),
             vinculacion_tematica=EvaluacionCriterio(**state["vinculacion_tematica"]),
             bienestar_colectivo=EvaluacionCriterio(**state["bienestar_colectivo"]),
+            uso_responsable_ia=EvaluacionCriterio(**state["uso_responsable_ia"]),
             potencial_impacto=EvaluacionCriterio(**state["potencial_impacto"]),
             comentario_general=comentario_general
         )
@@ -209,6 +239,7 @@ class EvaluadorEnsayos:
         workflow.add_node("creatividad", self._evaluar_creatividad)
         workflow.add_node("vinculacion", self._evaluar_vinculacion)
         workflow.add_node("bienestar", self._evaluar_bienestar)
+        workflow.add_node("uso_ia", self._evaluar_uso_ia)
         workflow.add_node("impacto", self._evaluar_impacto)
         workflow.add_node("comentario_general", self._generar_comentario_general)
         
@@ -217,30 +248,35 @@ class EvaluadorEnsayos:
         workflow.add_edge("calidad_tecnica", "creatividad")
         workflow.add_edge("creatividad", "vinculacion")
         workflow.add_edge("vinculacion", "bienestar")
-        workflow.add_edge("bienestar", "impacto")
+        workflow.add_edge("bienestar", "uso_ia")
+        workflow.add_edge("uso_ia", "impacto")
         workflow.add_edge("impacto", "comentario_general")
         workflow.add_edge("comentario_general", END)
         
         # Compilar el grafo
         return workflow.compile()
     
-    def evaluar(self, ensayo: str) -> EvaluacionEnsayo:
+    def evaluar(self, ensayo: str, anexo_ia: str = None) -> EvaluacionEnsayo:
         """
         Evalúa un ensayo completo.
         
         Args:
             ensayo: Texto del ensayo a evaluar
+            anexo_ia: Texto del anexo de IA (opcional)
             
         Returns:
             Objeto EvaluacionEnsayo con todos los criterios evaluados
         """
         print("\n" + "="*60)
         print("🎓 INICIANDO EVALUACIÓN DE ENSAYO")
+        if anexo_ia:
+            print("📎 Anexo de IA detectado y será incluido en la evaluación")
         print("="*60 + "\n")
         
         # Estado inicial
         estado_inicial = {
             "ensayo": ensayo,
+            "anexo_ia": anexo_ia if anexo_ia else "[NO SE PROPORCIONÓ ANEXO DE IA]",
             "paso_actual": "inicio"
         }
         

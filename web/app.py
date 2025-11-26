@@ -13,10 +13,11 @@ sys.path.append(str(Path(__file__).parent.parent))
 from agent import EvaluadorEnsayos
 from pdf_processor import PDFProcessor
 from database import db, Ensayo, init_db
+from matches_ia import obtener_anexo_ia, tiene_anexo_ia, MATCHES_SEGUROS_IA
 
 # Importar para el chat
 from langchain_openai import ChatOpenAI
-from langchain.prompts import ChatPromptTemplate
+from langchain_core.prompts import ChatPromptTemplate
 
 app = Flask(__name__, static_folder='.')
 app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16MB max file size
@@ -82,8 +83,37 @@ def evaluate():
                     'error': 'No se pudo extraer suficiente texto del PDF'
                 }), 400
             
-            # Evaluar el ensayo
-            evaluacion = evaluador.evaluar(texto)
+            # Verificar si tiene anexo de IA en el diccionario de matches seguros
+            nombre_base = filename.replace('.pdf', '').replace('.txt', '')
+            nombre_anexo = obtener_anexo_ia(nombre_base)
+            tiene_anexo_verificado = tiene_anexo_ia(nombre_base)
+            
+            # Cargar el texto del anexo si está disponible
+            texto_anexo = None
+            ruta_anexo = None
+            nombre_autor_anexo = None
+            
+            if nombre_anexo:
+                # Construir ruta al anexo
+                ruta_anexo = Path(__file__).parent.parent / 'Anexo_procesado' / nombre_anexo
+                
+                # Intentar cargar el anexo
+                if ruta_anexo.exists():
+                    try:
+                        with open(ruta_anexo, 'r', encoding='utf-8') as f:
+                            texto_anexo = f.read()
+                        print(f"✅ Anexo de IA cargado: {nombre_anexo}")
+                        
+                        # Extraer autor del anexo
+                        nombre_autor_anexo = nombre_anexo.replace('AnexoIA_', '').replace('.txt', '').replace('_', ' ')
+                    except Exception as e:
+                        print(f"⚠️ Error al cargar anexo: {str(e)}")
+                        texto_anexo = None
+                else:
+                    print(f"⚠️ Anexo no encontrado en ruta: {ruta_anexo}")
+            
+            # Evaluar el ensayo (con o sin anexo)
+            evaluacion = evaluador.evaluar(texto, anexo_ia=texto_anexo)
             
             # Preparar datos de evaluación
             calidad_tecnica = {
@@ -130,6 +160,17 @@ def evaluate():
                     } for f in (evaluacion.bienestar_colectivo.fragmentos_destacados or [])
                 ]
             }
+            uso_responsable_ia = {
+                'calificacion': evaluacion.uso_responsable_ia.calificacion,
+                'comentario': evaluacion.uso_responsable_ia.comentario,
+                'fragmentos_destacados': [
+                    {
+                        'texto': f.texto,
+                        'impacto': f.impacto,
+                        'razon': f.razon
+                    } for f in (evaluacion.uso_responsable_ia.fragmentos_destacados or [])
+                ]
+            }
             potencial_impacto = {
                 'calificacion': evaluacion.potencial_impacto.calificacion,
                 'comentario': evaluacion.potencial_impacto.comentario,
@@ -151,8 +192,11 @@ def evaluate():
                 creatividad=creatividad,
                 vinculacion_tematica=vinculacion_tematica,
                 bienestar_colectivo=bienestar_colectivo,
+                uso_responsable_ia=uso_responsable_ia,
                 potencial_impacto=potencial_impacto,
-                comentario_general=evaluacion.comentario_general
+                comentario_general=evaluacion.comentario_general,
+                tiene_anexo=tiene_anexo_verificado,
+                ruta_anexo=str(ruta_anexo) if ruta_anexo else None
             )
             db.session.add(ensayo)
             db.session.commit()
@@ -167,8 +211,12 @@ def evaluate():
                 'creatividad': creatividad,
                 'vinculacion_tematica': vinculacion_tematica,
                 'bienestar_colectivo': bienestar_colectivo,
+                'uso_responsable_ia': uso_responsable_ia,
                 'potencial_impacto': potencial_impacto,
-                'comentario_general': evaluacion.comentario_general
+                'comentario_general': evaluacion.comentario_general,
+                'tiene_anexo': tiene_anexo_verificado,
+                'nombre_anexo': nombre_anexo,
+                'autor_anexo': nombre_autor_anexo
             }
             
             return jsonify(resultado)
@@ -191,54 +239,108 @@ def chat():
     try:
         data = request.json
         message = data.get('message', '')
-        evaluation = data.get('evaluation', {})
-        essay_text = data.get('essay_text', '')
+        essay_ids = data.get('essay_ids', [])
         
         if not message:
             return jsonify({'error': 'No se proporcionó un mensaje'}), 400
         
-        if not evaluation:
-            return jsonify({'error': 'No hay evaluación disponible'}), 400
+        if not essay_ids:
+            return jsonify({'error': 'No hay ensayos seleccionados'}), 400
         
-        # Construir contexto de la evaluación
-        contexto_evaluacion = f"""
+        # Obtener los ensayos de la base de datos
+        ensayos = Ensayo.query.filter(Ensayo.id.in_(essay_ids)).all()
+        
+        if not ensayos:
+            return jsonify({'error': 'No se encontraron los ensayos'}), 400
+        
+        # Construir contexto para uno o múltiples ensayos
+        if len(ensayos) == 1:
+            ensayo = ensayos[0]
+            contexto_evaluacion = f"""
 TEXTO COMPLETO DEL ENSAYO:
-{essay_text if essay_text else '[Texto no disponible]'}
+Nombre: {ensayo.nombre_archivo}
+{ensayo.texto_completo}
 
 ---
 
 EVALUACIÓN DEL ENSAYO:
 
-Puntuación Total: {evaluation.get('puntuacion_total', 'N/A')}/5.00
+Puntuación Total: {ensayo.puntuacion_total}/5.00
 
 Criterios Evaluados:
 
 1. Calidad Técnica y Rigor Académico (20%):
-   - Calificación: {evaluation.get('calidad_tecnica', {}).get('calificacion', 'N/A')}/5
-   - Comentario: {evaluation.get('calidad_tecnica', {}).get('comentario', 'N/A')}
+   - Calificación: {ensayo.calidad_tecnica.get('calificacion', 'N/A')}/5
+   - Comentario: {ensayo.calidad_tecnica.get('comentario', 'N/A')}
 
 2. Creatividad y Originalidad (20%):
-   - Calificación: {evaluation.get('creatividad', {}).get('calificacion', 'N/A')}/5
-   - Comentario: {evaluation.get('creatividad', {}).get('comentario', 'N/A')}
+   - Calificación: {ensayo.creatividad.get('calificacion', 'N/A')}/5
+   - Comentario: {ensayo.creatividad.get('comentario', 'N/A')}
 
 3. Vinculación con Ejes Temáticos (15%):
-   - Calificación: {evaluation.get('vinculacion_tematica', {}).get('calificacion', 'N/A')}/5
-   - Comentario: {evaluation.get('vinculacion_tematica', {}).get('comentario', 'N/A')}
+   - Calificación: {ensayo.vinculacion_tematica.get('calificacion', 'N/A')}/5
+   - Comentario: {ensayo.vinculacion_tematica.get('comentario', 'N/A')}
 
 4. Bienestar Colectivo y Responsabilidad Social (20%):
-   - Calificación: {evaluation.get('bienestar_colectivo', {}).get('calificacion', 'N/A')}/5
-   - Comentario: {evaluation.get('bienestar_colectivo', {}).get('comentario', 'N/A')}
+   - Calificación: {ensayo.bienestar_colectivo.get('calificacion', 'N/A')}/5
+   - Comentario: {ensayo.bienestar_colectivo.get('comentario', 'N/A')}
 
-5. Potencial de Impacto y Publicación (20%):
-   - Calificación: {evaluation.get('potencial_impacto', {}).get('calificacion', 'N/A')}/5
-   - Comentario: {evaluation.get('potencial_impacto', {}).get('comentario', 'N/A')}
+5. Uso Responsable de IA (15%):
+   - Calificación: {ensayo.uso_responsable_ia.get('calificacion', 'N/A')}/5
+   - Comentario: {ensayo.uso_responsable_ia.get('comentario', 'N/A')}
+   - Tiene Anexo: {'Sí' if ensayo.tiene_anexo else 'No'}
 
-Comentario General: {evaluation.get('comentario_general', 'N/A')}
+6. Potencial de Impacto y Publicación (10%):
+   - Calificación: {ensayo.potencial_impacto.get('calificacion', 'N/A')}/5
+   - Comentario: {ensayo.potencial_impacto.get('comentario', 'N/A')}
+
+Comentario General: {ensayo.comentario_general}
+"""
+        else:
+            # Contexto para múltiples ensayos
+            contexto_evaluacion = f"SE ESTÁN ANALIZANDO {len(ensayos)} ENSAYOS:\n\n"
+            for i, ensayo in enumerate(ensayos, 1):
+                contexto_evaluacion += f"""
+{'='*80}
+ENSAYO {i}: {ensayo.nombre_archivo}
+{'='*80}
+
+TEXTO COMPLETO:
+{ensayo.texto_completo}
+
+---
+
+EVALUACIÓN:
+
+Puntuación Total: {ensayo.puntuacion_total}/5.00
+
+Criterios Evaluados:
+
+1. Calidad Técnica: {ensayo.calidad_tecnica.get('calificacion', 'N/A')}/5
+   {ensayo.calidad_tecnica.get('comentario', 'N/A')}
+
+2. Creatividad: {ensayo.creatividad.get('calificacion', 'N/A')}/5
+   {ensayo.creatividad.get('comentario', 'N/A')}
+
+3. Vinculación Temática: {ensayo.vinculacion_tematica.get('calificacion', 'N/A')}/5
+   {ensayo.vinculacion_tematica.get('comentario', 'N/A')}
+
+4. Bienestar Colectivo: {ensayo.bienestar_colectivo.get('calificacion', 'N/A')}/5
+   {ensayo.bienestar_colectivo.get('comentario', 'N/A')}
+
+5. Uso Responsable de IA: {ensayo.uso_responsable_ia.get('calificacion', 'N/A')}/5
+   {ensayo.uso_responsable_ia.get('comentario', 'N/A')}
+   Tiene Anexo: {'Sí' if ensayo.tiene_anexo else 'No'}
+
+6. Potencial de Impacto: {ensayo.potencial_impacto.get('calificacion', 'N/A')}/5
+   {ensayo.potencial_impacto.get('comentario', 'N/A')}
+
+Comentario General: {ensayo.comentario_general}
+
 """
         
         # Crear el prompt para el chat
-        prompt = ChatPromptTemplate.from_messages([
-            ("system", """Eres un asistente académico experto y profesional que ayuda a usuarios a comprender 
+        system_message = """Eres un asistente académico experto y profesional que ayuda a usuarios a comprender 
 evaluaciones de ensayos académicos. Tu tono debe ser formal, respetuoso y constructivo.
 
 Tus responsabilidades incluyen:
@@ -248,7 +350,16 @@ Tus responsabilidades incluyen:
 - Explicar el sistema de evaluación y los criterios utilizados
 - Ofrecer orientación académica profesional
 - Citar fragmentos específicos del ensayo para justificar las calificaciones
-- Proporcionar ejemplos concretos del texto cuando sea relevante
+- Proporcionar ejemplos concretos del texto cuando sea relevante"""
+        
+        if len(ensayos) > 1:
+            system_message += """
+- Cuando se analicen múltiples ensayos, compara y contrasta entre ellos
+- Identifica fortalezas y debilidades relativas entre los ensayos
+- Proporciona análisis comparativos detallados cuando se solicite
+- Menciona explícitamente a qué ensayo te refieres en tus respuestas"""
+        
+        system_message += """
 
 IMPORTANTE:
 - Tienes acceso al texto completo del ensayo y a toda la evaluación
@@ -263,7 +374,10 @@ IMPORTANTE:
 Contexto de la evaluación actual:
 {contexto}
 
-Responde la siguiente consulta del usuario de manera profesional y útil, citando fragmentos del ensayo cuando sea apropiado."""),
+Responde la siguiente consulta del usuario de manera profesional y útil, citando fragmentos del ensayo cuando sea apropiado."""
+        
+        prompt = ChatPromptTemplate.from_messages([
+            ("system", system_message),
             ("user", "{mensaje}")
         ])
         
@@ -342,6 +456,7 @@ EVALUACIÓN:
 - Creatividad: {ensayo.creatividad['calificacion']}/5 - {ensayo.creatividad['comentario']}
 - Vinculación Temática: {ensayo.vinculacion_tematica['calificacion']}/5 - {ensayo.vinculacion_tematica['comentario']}
 - Bienestar Colectivo: {ensayo.bienestar_colectivo['calificacion']}/5 - {ensayo.bienestar_colectivo['comentario']}
+- Uso Responsable de IA: {ensayo.uso_responsable_ia['calificacion']}/5 - {ensayo.uso_responsable_ia['comentario']} (Anexo: {'Sí' if ensayo.tiene_anexo else 'No'})
 - Potencial de Impacto: {ensayo.potencial_impacto['calificacion']}/5 - {ensayo.potencial_impacto['comentario']}
 
 Comentario General: {ensayo.comentario_general}
@@ -352,18 +467,16 @@ Comentario General: {ensayo.comentario_general}
         
         # Crear el prompt para la comparación
         prompt = ChatPromptTemplate.from_messages([
-            ("system", """Eres un evaluador académico experto que realiza análisis comparativos de ensayos.
+            ("system", """Eres un evaluador académico experto que realiza análisis comparativos concisos y directos.
 
-Tu tarea es comparar los ensayos proporcionados y generar un análisis completo que incluya:
+Genera un análisis BREVE Y RESUMIDO que incluya:
 
-1. **Resumen Ejecutivo**: Una visión general de todos los ensayos comparados
-2. **Análisis Comparativo por Criterio**: Comparar cada criterio de evaluación entre los ensayos
-3. **Fortalezas y Debilidades**: Identificar qué ensayo destaca en cada aspecto
-4. **Ranking**: Ordenar los ensayos del mejor al peor con justificación
-5. **Recomendaciones**: Sugerencias específicas para cada ensayo
-6. **Conclusión**: Determinar cuál es el ensayo ganador y por qué
+1. **Ranking Final**: Lista ordenada del mejor al peor con puntuaciones
+2. **Resumen de Fortalezas**: Máximo 2-3 puntos clave por ensayo
+3. **Áreas de Mejora**: Máximo 2 puntos por ensayo
+4. **Ganador y Justificación**: 2-3 líneas explicando por qué gana
 
-Mantén un tono profesional, objetivo y académico. Usa citas específicas de los ensayos para justificar tus comparaciones.
+Sé CONCISO. Usa máximo 400 palabras en total. No repitas información. Mantén un tono profesional y directo.
 
 Ensayos a comparar:
 {contexto}"""),

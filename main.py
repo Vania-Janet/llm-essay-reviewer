@@ -37,7 +37,13 @@ def imprimir_evaluacion(evaluacion: EvaluacionEnsayo):
     print()
     
     # Criterio 5
-    print("✨ 5. POTENCIAL DE IMPACTO Y PUBLICACIÓN (20%)")
+    print("🤖 5. USO RESPONSABLE Y REFLEXIVO DE HERRAMIENTAS DE IA (15%)")
+    print(f"   Calificación: {evaluacion.uso_responsable_ia.calificacion}/5")
+    print(f"   {evaluacion.uso_responsable_ia.comentario}")
+    print()
+    
+    # Criterio 6
+    print("✨ 6. POTENCIAL DE IMPACTO Y PUBLICACIÓN (10%)")
     print(f"   Calificación: {evaluacion.potencial_impacto.calificacion}/5")
     print(f"   {evaluacion.potencial_impacto.comentario}")
     print()

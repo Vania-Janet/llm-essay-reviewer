@@ -19,7 +19,7 @@ except ImportError:
     PDFPLUMBER_AVAILABLE = False
 
 from langchain_openai import ChatOpenAI
-from langchain.prompts import ChatPromptTemplate
+from langchain_core.prompts import ChatPromptTemplate
 
 load_dotenv()
 
