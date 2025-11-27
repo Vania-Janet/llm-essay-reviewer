@@ -18,8 +18,10 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent))
 
 from flask import Flask
-from database import db, migrate
-from flask_migrate import init, migrate as create_migration, upgrade, downgrade, current, history
+from app.database.connection import db
+from flask_migrate import Migrate, init, migrate as create_migration, upgrade, downgrade, current, history
+
+migrate_tool = Migrate()
 
 def create_app():
     """Crear aplicación Flask para migraciones."""
@@ -27,13 +29,13 @@ def create_app():
     
     # Configuración de base de datos
     project_root = Path(__file__).parent
-    db_path = project_root / 'essays.db'
+    db_path = project_root / 'data' / 'essays.db'
     app.config['SQLALCHEMY_DATABASE_URI'] = f'sqlite:///{db_path.absolute()}'
     app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
     
     # Inicializar extensiones
     db.init_app(app)
-    migrate.init_app(app, db)
+    migrate_tool.init_app(app, db)
     
     return app
 

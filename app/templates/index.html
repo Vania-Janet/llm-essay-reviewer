@@ -1,0 +1,751 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Evaluador de Ensayos - IA</title>
+    <link rel="icon" type="image/png" href="/static/icon.png">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/static/styles.css">
+    <script>
+        // Prevenir navegación hacia atrás después de logout
+        if (window.performance && window.performance.navigation.type === 2) {
+            // Si llegamos aquí usando el botón "atrás", verificar autenticación
+            fetch('/api/verify-token', {
+                credentials: 'same-origin'
+            }).then(response => {
+                if (!response.ok) {
+                    window.location.replace('/login');
+                }
+            });
+        }
+    </script>
+</head>
+<body>
+    <div class="container">
+        <!-- Header unificado con navegación integrada -->
+        <header class="main-header">
+            <div class="header-left">
+                <img src="/static/image.png" alt="Logo" class="logo">
+                <nav class="integrated-nav">
+                    <button class="nav-btn active" id="navTabIA" data-section="library">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" width="20" height="20">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+                        </svg>
+                        <span>Evaluación con IA</span>
+                    </button>
+                    <button class="nav-btn" id="navTabManual" data-section="judge">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" width="20" height="20">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                        </svg>
+                        <span>Evaluación Manual</span>
+                    </button>
+                </nav>
+            </div>
+            
+            <div class="header-right">
+                <div class="user-profile">
+                    <span id="userName" class="user-name"></span>
+                    <button id="logoutBtn" class="btn-logout" title="Cerrar sesión">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" width="18" height="18">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                        </svg>
+                        Salir
+                    </button>
+                </div>
+            </div>
+        </header>
+
+        <main>
+            <div class="main-content">
+            <!-- Sección de biblioteca de ensayos (se muestra al inicio) -->
+            <div class="essays-library-section" id="essaysLibrarySection">
+                <div class="library-header">
+                    <h2>Biblioteca de Ensayos</h2>
+                    <p class="library-subtitle">Selecciona un ensayo para revisar o varios para comparar</p>
+                    <div class="library-actions">
+                        <button class="btn-success" id="downloadExcelBtn" title="Descargar reporte en Excel">
+                            📊 Descargar Excel
+                        </button>
+                        <button class="btn-secondary" id="showStatsBtn" title="Ver estadísticas globales">
+                            📈 Ver Dashboard
+                        </button>
+                        <button class="btn-primary" id="compareLibraryBtn" disabled>
+                            Comparar Seleccionados
+                        </button>
+                        <button class="btn-secondary" id="uploadNewBtn">
+                            ➕ Evaluar Nuevo Ensayo
+                        </button>
+                    </div>
+                </div>
+                <div class="library-list" id="libraryList">
+                    <div class="loader"></div>
+                    <p>Cargando ensayos...</p>
+                </div>
+            </div>
+
+            <!-- Sección de historial de ensayos -->
+            <div class="essays-history-section" id="essaysHistorySection" style="display: none;">
+                <button class="btn-back" id="backFromHistoryBtn" title="Volver a la biblioteca">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" style="width: 20px; height: 20px;">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+                    </svg>
+                    Volver a Biblioteca
+                </button>
+                <div class="history-header">
+                    <h2>Historial de Ensayos Evaluados</h2>
+                    <div class="history-actions">
+                        <button class="btn-primary" id="compareSelectedBtn" disabled>
+                            Comparar Seleccionados
+                        </button>
+                        <button class="btn-secondary" id="closeHistoryBtn">Cerrar</button>
+                    </div>
+                </div>
+                <div class="essays-list" id="essaysList">
+                    <div class="loader"></div>
+                    <p>Cargando ensayos...</p>
+                </div>
+            </div>
+
+            <!-- Sección de comparación -->
+            <div class="comparison-section" id="comparisonSection" style="display: none;">
+                <button class="btn-back" id="backFromComparisonBtn" title="Volver a la biblioteca">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" style="width: 20px; height: 20px;">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+                    </svg>
+                    Volver a Biblioteca
+                </button>
+                <div class="comparison-header">
+                    <h2>Comparación de Ensayos</h2>
+                    <button class="btn-secondary" id="closeComparisonBtn">Cerrar</button>
+                </div>
+                <div class="comparison-content" id="comparisonContent">
+                    <div class="loader"></div>
+                    <p>Generando análisis comparativo...</p>
+                </div>
+            </div>
+
+            <!-- Sección de Gestión de Criterios Personalizados -->
+            <div class="criteria-management-section" id="criteriaManagementSection" style="display: none;">
+                <button class="btn-back" id="backFromCriteriaBtn" title="Volver a la biblioteca">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" style="width: 20px; height: 20px;">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+                    </svg>
+                    Volver a Biblioteca
+                </button>
+                
+                <div class="criteria-header">
+                    <div>
+                        <h2>Mis Criterios de Evaluación</h2>
+                        <p class="criteria-subtitle">Define los criterios personalizados para evaluar tus ensayos</p>
+                    </div>
+                    <button class="btn-primary" id="addCriterionBtn">
+                        ➕ Agregar Criterio
+                    </button>
+                </div>
+
+                <div class="criteria-info-panel">
+                    <div class="info-item">
+                        <span class="info-icon">📊</span>
+                        <div>
+                            <strong>Total de criterios:</strong>
+                            <span id="totalCriteriaCount">0</span>
+                        </div>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-icon">⚖️</span>
+                        <div>
+                            <strong>Suma de pesos:</strong>
+                            <span id="totalWeightSum">0</span>%
+                            <span class="weight-warning" id="weightWarning" style="display: none;">⚠️ Debe sumar 100%</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="criteria-list" id="criteriaList">
+                    <div class="empty-state">
+                        <span class="empty-icon">📝</span>
+                        <p>No tienes criterios personalizados aún</p>
+                        <p class="empty-subtitle">Haz clic en "Agregar Criterio" para crear tu primer criterio de evaluación</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Modal para crear/editar criterio -->
+            <div class="modal" id="criterionModal" style="display: none;">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h3 id="criterionModalTitle">Nuevo Criterio</h3>
+                        <button class="btn-close-modal" id="closeCriterionModal">×</button>
+                    </div>
+                    <div class="modal-body">
+                        <form id="criterionForm">
+                            <input type="hidden" id="criterionId">
+                            
+                            <div class="form-group">
+                                <label for="criterionName">Nombre del Criterio *</label>
+                                <input type="text" id="criterionName" required maxlength="100" placeholder="Ej: Claridad de Escritura">
+                            </div>
+
+                            <div class="form-group">
+                                <label for="criterionDescription">Descripción *</label>
+                                <textarea id="criterionDescription" required rows="4" placeholder="Describe qué aspectos evalúa este criterio..."></textarea>
+                            </div>
+
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="criterionWeight">Peso (%) *</label>
+                                    <input type="number" id="criterionWeight" required min="1" max="100" step="1" value="20">
+                                    <small>Debe sumar 100% entre todos los criterios</small>
+                                </div>
+
+                                <div class="form-group">
+                                    <label for="criterionIcon">Icono</label>
+                                    <select id="criterionIcon">
+                                        <option value="📝">📝 Documento</option>
+                                        <option value="🎨">🎨 Creatividad</option>
+                                        <option value="🔬">🔬 Análisis</option>
+                                        <option value="💡">💡 Ideas</option>
+                                        <option value="📊">📊 Datos</option>
+                                        <option value="🎯">🎯 Precisión</option>
+                                        <option value="✨">✨ Calidad</option>
+                                        <option value="🌟">🌟 Excelencia</option>
+                                        <option value="📖">📖 Contenido</option>
+                                        <option value="🔍">🔍 Detalle</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div class="modal-actions">
+                                <button type="button" class="btn-secondary" id="cancelCriterionBtn">Cancelar</button>
+                                <button type="submit" class="btn-primary" id="saveCriterionBtn">Guardar Criterio</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Sección de Evaluación Manual del Juez -->
+            <div class="judge-evaluation-section" id="judgeEvaluationSection" style="display: none;">
+                <!-- The Grading Cockpit: 3-column layout -->
+                <div class="judge-workspace">
+                    
+                    <!-- Panel Izquierdo: Cola de Ensayos (20%) -->
+                    <aside class="essays-queue">
+                        <div class="queue-header">
+                            <h3>Ensayos <span id="queueProgress">0/0</span></h3>
+                            <input type="text" id="queueSearchInput" placeholder="🔍 Buscar..." class="search-input">
+                        </div>
+                        <div class="queue-list" id="queueList">
+                            <div class="queue-loading">
+                                <div class="loader"></div>
+                                <p>Cargando ensayos...</p>
+                            </div>
+                        </div>
+                    </aside>
+
+                    <!-- Panel Central: Visor de PDF (45%) -->
+                    <section class="document-viewer">
+                        <div class="toolbar">
+                            <div class="toolbar-left">
+                                <span class="page-indicator" id="pageIndicator">Selecciona un ensayo</span>
+                            </div>
+                            <div class="zoom-controls">
+                                <button class="zoom-btn" id="zoomOutBtn" title="Alejar">−</button>
+                                <span id="zoomLevel">100%</span>
+                                <button class="zoom-btn" id="zoomInBtn" title="Acercar">+</button>
+                            </div>
+                        </div>
+                        <div class="pdf-container" id="pdfContainer">
+                            <div class="pdf-placeholder">
+                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" width="80" height="80">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                                </svg>
+                                <p>Selecciona un ensayo de la lista para comenzar</p>
+                            </div>
+                            <iframe id="pdfFrame" class="pdf-frame" style="display: none;"></iframe>
+                        </div>
+                    </section>
+
+                    <!-- Panel Derecho: Rúbrica de Evaluación (35%) -->
+                    <aside class="grading-panel">
+                        <div class="grading-header">
+                            <h3>Evaluación</h3>
+                            <div class="live-score">
+                                Total: <span id="currentTotal">0.0</span>/5.0
+                            </div>
+                        </div>
+                        
+                        <form class="rubric-form" id="rubricForm">
+                            <!-- Criterio 1: Calidad Técnica -->
+                            <div class="criterion-block" data-criterion="calidad_tecnica">
+                                <div class="criterion-label">
+                                    <label>Calidad Técnica</label>
+                                    <span class="criterion-weight">(25%)</span>
+                                    <button type="button" class="info-icon" title="Estructura, coherencia, argumentación sólida y respaldo bibliográfico">ℹ️</button>
+                                </div>
+                                <div class="score-segments" data-criterion="calidad_tecnica">
+                                    <button type="button" data-score="1">1</button>
+                                    <button type="button" data-score="2">2</button>
+                                    <button type="button" data-score="3">3</button>
+                                    <button type="button" data-score="4">4</button>
+                                    <button type="button" data-score="5">5</button>
+                                </div>
+                                <textarea placeholder="Comentario específico (opcional)..." rows="2" class="criterion-comment" name="calidad_tecnica_comment"></textarea>
+                            </div>
+
+                            <!-- Criterio 2: Creatividad -->
+                            <div class="criterion-block" data-criterion="creatividad">
+                                <div class="criterion-label">
+                                    <label>Creatividad y Originalidad</label>
+                                    <span class="criterion-weight">(20%)</span>
+                                    <button type="button" class="info-icon" title="Innovación en ideas, perspectivas únicas y pensamiento crítico">ℹ️</button>
+                                </div>
+                                <div class="score-segments" data-criterion="creatividad">
+                                    <button type="button" data-score="1">1</button>
+                                    <button type="button" data-score="2">2</button>
+                                    <button type="button" data-score="3">3</button>
+                                    <button type="button" data-score="4">4</button>
+                                    <button type="button" data-score="5">5</button>
+                                </div>
+                                <textarea placeholder="Comentario específico (opcional)..." rows="2" class="criterion-comment" name="creatividad_comment"></textarea>
+                            </div>
+
+                            <!-- Criterio 3: Vinculación Temática -->
+                            <div class="criterion-block" data-criterion="vinculacion_tematica">
+                                <div class="criterion-label">
+                                    <label>Vinculación Temática</label>
+                                    <span class="criterion-weight">(15%)</span>
+                                    <button type="button" class="info-icon" title="Integración de tecnología, sostenibilidad e inclusión">ℹ️</button>
+                                </div>
+                                <div class="score-segments" data-criterion="vinculacion_tematica">
+                                    <button type="button" data-score="1">1</button>
+                                    <button type="button" data-score="2">2</button>
+                                    <button type="button" data-score="3">3</button>
+                                    <button type="button" data-score="4">4</button>
+                                    <button type="button" data-score="5">5</button>
+                                </div>
+                                <textarea placeholder="Comentario específico (opcional)..." rows="2" class="criterion-comment" name="vinculacion_tematica_comment"></textarea>
+                            </div>
+
+                            <!-- Criterio 4: Bienestar Colectivo -->
+                            <div class="criterion-block" data-criterion="bienestar_colectivo">
+                                <div class="criterion-label">
+                                    <label>Bienestar Colectivo</label>
+                                    <span class="criterion-weight">(20%)</span>
+                                    <button type="button" class="info-icon" title="Impacto social, consideraciones éticas y sostenibilidad">ℹ️</button>
+                                </div>
+                                <div class="score-segments" data-criterion="bienestar_colectivo">
+                                    <button type="button" data-score="1">1</button>
+                                    <button type="button" data-score="2">2</button>
+                                    <button type="button" data-score="3">3</button>
+                                    <button type="button" data-score="4">4</button>
+                                    <button type="button" data-score="5">5</button>
+                                </div>
+                                <textarea placeholder="Comentario específico (opcional)..." rows="2" class="criterion-comment" name="bienestar_colectivo_comment"></textarea>
+                            </div>
+
+                            <!-- Criterio 5: Uso Responsable IA -->
+                            <div class="criterion-block" data-criterion="uso_responsable_ia">
+                                <div class="criterion-label">
+                                    <label>Uso Responsable de IA</label>
+                                    <span class="criterion-weight">(10%)</span>
+                                    <button type="button" class="info-icon" title="Reflexión sobre el uso ético y transparente de herramientas de IA">ℹ️</button>
+                                </div>
+                                <div class="score-segments" data-criterion="uso_responsable_ia">
+                                    <button type="button" data-score="1">1</button>
+                                    <button type="button" data-score="2">2</button>
+                                    <button type="button" data-score="3">3</button>
+                                    <button type="button" data-score="4">4</button>
+                                    <button type="button" data-score="5">5</button>
+                                </div>
+                                <textarea placeholder="Comentario específico (opcional)..." rows="2" class="criterion-comment" name="uso_responsable_ia_comment"></textarea>
+                            </div>
+
+                            <!-- Criterio 6: Potencial Impacto -->
+                            <div class="criterion-block" data-criterion="potencial_impacto">
+                                <div class="criterion-label">
+                                    <label>Potencial de Impacto</label>
+                                    <span class="criterion-weight">(10%)</span>
+                                    <button type="button" class="info-icon" title="Claridad comunicativa, relevancia y capacidad de inspirar">ℹ️</button>
+                                </div>
+                                <div class="score-segments" data-criterion="potencial_impacto">
+                                    <button type="button" data-score="1">1</button>
+                                    <button type="button" data-score="2">2</button>
+                                    <button type="button" data-score="3">3</button>
+                                    <button type="button" data-score="4">4</button>
+                                    <button type="button" data-score="5">5</button>
+                                </div>
+                                <textarea placeholder="Comentario específico (opcional)..." rows="2" class="criterion-comment" name="potencial_impacto_comment"></textarea>
+                            </div>
+
+                            <!-- Comentario General -->
+                            <div class="general-comment-block">
+                                <label>Comentario General</label>
+                                <textarea placeholder="Feedback cualitativo general para el estudiante..." rows="4" class="general-comment" name="comentario_general"></textarea>
+                            </div>
+
+                            <!-- Botones de Acción -->
+                            <div class="grading-actions">
+                                <button type="button" class="btn-secondary" id="saveDraftBtn">💾 Guardar Borrador</button>
+                                <button type="submit" class="btn-primary">✓ Finalizar Evaluación</button>
+                            </div>
+                        </form>
+                    </aside>
+
+                </div>
+            </div>
+
+                                <div class="total-score-section" style="display: none;">
+                                    <div class="total-score-display">
+                                        <span class="total-label">Puntuación Total:</span>
+                                        <span class="total-value" id="totalScoreValue">0.00</span>
+                                        <span class="total-max">/ 5.00</span>
+                                    </div>
+                                </div>
+
+                                <div class="comments-section" style="display: none;">
+                                    <label for="generalComments" class="form-label">Comentarios Generales</label>
+                                    <textarea id="generalComments" class="form-textarea" rows="4" placeholder="Escribe comentarios adicionales sobre la evaluación..."></textarea>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="upload-section" id="uploadSection">
+                <div class="upload-header">
+                    <button class="btn-back" id="backFromUploadBtn" title="Volver a la biblioteca">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" style="width: 20px; height: 20px;">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+                        </svg>
+                        Volver a Biblioteca
+                    </button>
+                </div>
+                <div class="drop-zone" id="dropZone">
+                    <svg class="upload-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                    </svg>
+                    <h2>Arrastra tu archivo PDF aquí</h2>
+                    <p>o haz clic para seleccionar un archivo</p>
+                    <input type="file" id="fileInput" accept=".pdf" hidden>
+                    <button class="btn-primary" id="selectFileBtn">Seleccionar Archivo</button>
+                </div>
+                <div class="file-info" id="fileInfo" style="display: none;">
+                    <div class="file-details">
+                        <svg class="file-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                        </svg>
+                        <div>
+                            <p class="file-name" id="fileName"></p>
+                            <p class="file-size" id="fileSize"></p>
+                        </div>
+                    </div>
+                    <button class="btn-secondary" id="evaluateBtn">Evaluar Ensayo</button>
+                </div>
+            </div>
+
+            <div class="processing-section" id="processingSection" style="display: none;">
+                <div class="loader"></div>
+                <h2>Procesando ensayo...</h2>
+                <p>El agente de IA está analizando el documento. Esto puede tomar unos momentos.</p>
+            </div>
+
+            <div class="results-section" id="resultsSection" style="display: none;">
+                <button class="btn-back" id="backFromResultsBtn" title="Volver a la biblioteca">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" style="width: 20px; height: 20px;">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+                    </svg>
+                    Volver a Biblioteca
+                </button>
+                
+                <div class="results-header">
+                    <div class="essay-title-section">
+                        <h2 id="essayTitle">Resultados de la Evaluación</h2>
+                        <div class="essay-metadata" id="essayMetadata"></div>
+                    </div>
+                    <div class="header-actions">
+                        <button class="btn-action" id="viewHistoryBtn" title="Ver historial de ensayos">
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
+                            Ver Historial
+                        </button>
+                        <button class="btn-action" id="downloadReportBtn" title="Descargar reporte">
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                            </svg>
+                            Descargar
+                        </button>
+                        <button class="btn-secondary" id="newEvaluationBtn">Nueva Evaluación</button>
+                    </div>
+                </div>
+                
+                <!-- Layout con PDF viewer -->
+                <div class="results-with-pdf">
+                    <div class="results-content">
+                        <div class="score-card" id="scoreCard">
+                            <h3>Puntuación Total</h3>
+                            <div class="total-score" id="totalScore">0.00</div>
+                            <div class="score-bar">
+                                <div class="score-fill" id="scoreFill"></div>
+                            </div>
+                        </div>
+
+                <!-- Editor de Puntuación -->
+                <div class="score-editor" id="scoreEditor" style="display: none;">
+                    <div class="editor-header">
+                        <h3>Editar Puntuación Total</h3>
+                        <button class="btn-close" id="closeScoreEditor">×</button>
+                    </div>
+                    <div class="editor-content">
+                        <label for="editTotalScore">Puntuación Total (0.00 - 5.00):</label>
+                        <input type="number" id="editTotalScore" min="0" max="5" step="0.01" class="score-input">
+                        <button class="btn-primary" id="saveScoreBtn">Guardar Cambios</button>
+                    </div>
+                </div>
+
+                <div class="criteria-grid">
+                                        <div class="criterion-card" data-criterion="1">
+                        <div class="criterion-header">
+                            <span class="criterion-icon">📝</span>
+                            <h3>Calidad Técnica y Rigor Académico</h3>
+                            <span class="criterion-weight">25%</span>
+                            <button class="btn-edit-criterion" data-criterion="1" title="Editar criterio">
+                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                                </svg>
+                            </button>
+                        </div>
+                        <div class="criterion-score" id="score1">-</div>
+                        <p class="criterion-comment" id="comment1" contenteditable="false"></p>
+                        <div class="fragments-container" id="fragments1"></div>
+                    </div>
+
+                    <div class="criterion-card" data-criterion="2">
+                        <div class="criterion-header">
+                            <span class="criterion-icon">🎨</span>
+                            <h3>Creatividad y Originalidad</h3>
+                            <span class="criterion-weight">20%</span>
+                            <button class="btn-edit-criterion" data-criterion="2" title="Editar criterio">
+                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                                </svg>
+                            </button>
+                        </div>
+                        <div class="criterion-score" id="score2">-</div>
+                        <p class="criterion-comment" id="comment2" contenteditable="false"></p>
+                        <div class="fragments-container" id="fragments2"></div>
+                    </div>
+
+                    <div class="criterion-card" data-criterion="3">
+                        <div class="criterion-header">
+                            <span class="criterion-icon">🎯</span>
+                            <h3>Vinculación con los Ejes Temáticos</h3>
+                            <span class="criterion-weight">15%</span>
+                            <button class="btn-edit-criterion" data-criterion="3" title="Editar criterio">
+                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                                </svg>
+                            </button>
+                        </div>
+                        <div class="criterion-score" id="score3">-</div>
+                        <p class="criterion-comment" id="comment3" contenteditable="false"></p>
+                        <div class="fragments-container" id="fragments3"></div>
+                    </div>
+
+                    <div class="criterion-card" data-criterion="4">
+                        <div class="criterion-header">
+                            <span class="criterion-icon">🌍</span>
+                            <h3>Reflexión sobre Bienestar Colectivo</h3>
+                            <span class="criterion-weight">20%</span>
+                            <button class="btn-edit-criterion" data-criterion="4" title="Editar criterio">
+                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                                </svg>
+                            </button>
+                        </div>
+                        <div class="criterion-score" id="score4">-</div>
+                        <p class="criterion-comment" id="comment4" contenteditable="false"></p>
+                        <div class="fragments-container" id="fragments4"></div>
+                    </div>
+
+                    <div class="criterion-card" data-criterion="5">
+                        <div class="criterion-header">
+                            <span class="criterion-icon">🤖</span>
+                            <h3>Uso Responsable de IA</h3>
+                            <span class="criterion-weight">15%</span>
+                            <button class="btn-edit-criterion" data-criterion="5" title="Editar criterio">
+                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                                </svg>
+                            </button>
+                        </div>
+                        <div class="anexo-warning" id="anexoWarning" style="display: none;">
+                            <strong style="color: #dc3545;">⚠️ No se encontró anexo de IA verificado para este ensayo</strong>
+                            <p style="margin-top: 5px; font-size: 0.9em;">El criterio de Uso Responsable de IA fue evaluado sin anexo.</p>
+                        </div>
+                        <div class="criterion-score" id="score5">-</div>
+                        <p class="criterion-comment" id="comment5" contenteditable="false"></p>
+                        <div class="fragments-container" id="fragments5"></div>
+                    </div>
+
+                    <div class="criterion-card" data-criterion="6">
+                        <div class="criterion-header">
+                            <span class="criterion-icon">✨</span>
+                            <h3>Potencial de Impacto y Publicación</h3>
+                            <span class="criterion-weight">20%</span>
+                            <button class="btn-edit-criterion" data-criterion="6" title="Editar criterio">
+                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                                </svg>
+                            </button>
+                        </div>
+                        <div class="criterion-score" id="score6">-</div>
+                        <p class="criterion-comment" id="comment6" contenteditable="false"></p>
+                        <div class="fragments-container" id="fragments6"></div>
+                    </div>
+                </div>
+
+                <div class="general-comment" id="generalComment" style="display: none;">
+                    <div class="comment-header">
+                        <h3>Comentario General</h3>
+                        <button class="btn-edit-comment" id="editGeneralCommentBtn" title="Editar comentario">
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                            </svg>
+                        </button>
+                    </div>
+                    <p id="generalCommentText" contenteditable="false"></p>
+                </div>
+                    </div>
+                    
+                    <!-- PDF Viewer -->
+                    <div class="pdf-viewer-container" id="pdfViewerContainer" style="display: none;">
+                        <div class="pdf-viewer-header">
+                            <h3>📄 Documento Original</h3>
+                            <button class="btn-close-pdf" id="closePdfBtn" title="Cerrar PDF">
+                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                                </svg>
+                            </button>
+                        </div>
+                        <iframe id="pdfViewer" class="pdf-viewer-frame" title="Visor de PDF"></iframe>
+                        <div class="pdf-error" id="pdfError" style="display: none;">
+                            <p>⚠️ No se pudo cargar el PDF</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Botón Flotante de Chat -->
+            <button class="chat-widget-btn" id="chatWidgetTrigger" title="Abrir chat con IA">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
+                </svg>
+            </button>
+
+            <!-- Chat Panel -->
+            <aside class="chat-panel" id="chatPanel">
+                <div class="chat-header">
+                    <div class="chat-title">
+                        <svg class="chat-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
+                        </svg>
+                        <h3>Asistente IA</h3>
+                    </div>
+                    <button class="btn-close-chat" id="closeChatBtn" title="Cerrar chat">×</button>
+                </div>
+
+                <div class="chat-content" id="chatContent">
+                    <div class="chat-messages" id="chatMessages">
+                        <div class="chat-message assistant">
+                            <div class="message-avatar">IA</div>
+                            <div class="message-content">
+                                <p>Bienvenido al asistente de consultas académicas. Una vez que haya evaluado un ensayo, podré responder preguntas específicas sobre la evaluación, los criterios aplicados, o proporcionar recomendaciones para mejorar el trabajo.</p>
+                                <p class="message-tip">Puede consultar sobre cualquier aspecto de la evaluación o solicitar sugerencias de mejora.</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="chat-input-container">
+                        <div class="chat-input-wrapper">
+                            <textarea 
+                                class="chat-input" 
+                                id="chatInput" 
+                                placeholder="Escriba su consulta sobre la evaluación..."
+                                rows="3"
+                                disabled
+                            ></textarea>
+                            <button class="chat-send-btn-circle" id="chatSendBtn" disabled title="Enviar mensaje">
+                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6" />
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="chat-status" id="chatStatus" style="display: none;">
+                    <div class="chat-loader"></div>
+                    <span>Procesando consulta...</span>
+                </div>
+            </aside>
+        </main>
+
+        <!-- Modal de Estadísticas -->
+        <div class="modal" id="statsModal" style="display: none;">
+            <div class="modal-content large-modal">
+                <div class="modal-header">
+                    <h3>📊 Dashboard de Estadísticas del Concurso</h3>
+                    <button class="btn-close-modal" onclick="document.getElementById('statsModal').style.display='none'">×</button>
+                </div>
+                <div class="modal-body">
+                    <div class="stats-summary">
+                        <div class="stat-card">
+                            <div class="stat-value" id="totalEssays">0</div>
+                            <div class="stat-label">Total de Ensayos</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-value" id="avgScore">0.0</div>
+                            <div class="stat-label">Promedio General</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-value" id="highestScore">0.0</div>
+                            <div class="stat-label">Calificación Más Alta</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-value" id="lowestScore">0.0</div>
+                            <div class="stat-label">Calificación Más Baja</div>
+                        </div>
+                    </div>
+                    <div class="charts-grid">
+                        <div class="chart-container">
+                            <h4>Distribución de Puntajes</h4>
+                            <canvas id="scoresChart"></canvas>
+                        </div>
+                        <div class="chart-container">
+                            <h4>Promedio por Criterio</h4>
+                            <canvas id="criteriaRadarChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <footer>
+            <p>&copy; 2025 Sistema de Evaluación de Ensayos. Todos los derechos reservados.</p>
+        </footer>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <script src="/static/main.js"></script>
+    <script src="/static/criteria_management.js"></script>
+    <script src="/static/grading_cockpit.js"></script>
+</body>
+</html>

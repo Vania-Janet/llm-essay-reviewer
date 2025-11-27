@@ -10,8 +10,10 @@ __pycache__/
 *.sav
 *.pth
 *.db
-pdfs_procesado/
-Anexo_procesado/
+# Data folders now in data/
+# data/pdfs/
+# data/anexos/
+# data/processed/
 
 # --- Virtual environments ---
 venv/
