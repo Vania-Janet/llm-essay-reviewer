@@ -126,6 +126,29 @@ python test_pdf_processor.py
 
 ## Guía de Uso
 
+### Configuración de Seguridad (NUEVO) 🔐
+
+El sistema ahora incluye autenticación segura. **Configuración obligatoria antes del primer uso:**
+
+```bash
+# Generar claves de seguridad automáticamente
+python setup_security.py
+```
+
+Este comando:
+- Genera claves secretas seguras (Flask y JWT)
+- Crea el archivo `.env` con la configuración
+- Opcionalmente crea un usuario administrador
+
+**Características de seguridad:**
+- ✅ Contraseñas hasheadas con bcrypt (NUNCA en texto plano)
+- ✅ Autenticación con JWT (tokens seguros)
+- ✅ Validación de fortaleza de contraseñas
+- ✅ Sesiones con expiración automática (24h)
+- ✅ HTTPS obligatorio en producción
+
+Ver documentación completa en: **[SECURITY.md](SECURITY.md)**
+
 ### Interfaz Web 
 La forma más sencilla de usar el sistema:
 
@@ -136,7 +159,14 @@ python app.py
 
 Luego abre en tu navegador: **http://localhost:5001**
 
+**Primera vez:**
+1. Accede a `/login.html`
+2. Crea una cuenta (registro)
+3. Inicia sesión
+4. ¡Comienza a evaluar ensayos!
+
 **Características de la interfaz web:**
+- 🔐 Sistema de login y registro seguro
 - Drag & drop de archivos PDF
 - Procesamiento en tiempo real
 - Visualización profesional de resultados

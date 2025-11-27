@@ -1,6 +1,4 @@
-
-# Diccionario: nombre_archivo_ensayo -> nombre_archivo_anexo
-MATCHES_SEGUROS_IA = {
+MATCHES_COMPLETOS = {
     "Ensayo_Abril_Minerva_Estrada_Montaño_Las_Aulas_Invisibles_Neurodiversidad_y_la_Violencia_Epistémica_del_Sistema_Educativo.txt": "AnexoIA_Abril_Minerva_Justicia_Cognitiva_y_Neurodiversidad.txt",
     "Ensayo_Ana_Gabriela_González_Esparza_Miradas_al_Mañana.txt": "AnexoIA_Ana_Gabriela_Gonzalez_Esparza_Inegniera_Inversa.pdf",
     "Ensayo_Andrea_Mata_Ramírez_Memoria_tecnológica_y_sociedad_el_legado_digital_de_la_ingeniería_humana.txt": "AnexoIA_Andrea_Mata_Ramírez_Memoria_tecnológica_y_sociedad.txt",
@@ -18,7 +16,7 @@ MATCHES_SEGUROS_IA = {
     "Ensayo_Garduño_Rodríguez_Salvador_Arturo_MEMORIA_TECNOLÓGICA_¿ARCHIVO_FIEL_O_CÁRCEL_DE_LA_IMAGINACIÓN.txt": "AnexoIA_Garduño_Rodríguez_Salvador_Arturo_Memoria_tecnológica_¿Archivo_fiel_o_cárcel_de_la_imaginación.txt",
     "Ensayo_Gerardo_Enrique_Ramírez_Pérez_Un_camino_hacia_la_sustentabilidad.txt": "AnexoIA_Gerardo_Ramirez_Tecnología_inclusiva_y_accesible_en_la_era_de_la_inteligencia_artificial_un_camino_hacia_la_sustenta.txt",
     "Ensayo_Giovany_Ordóñez_Hernández_Eficiencia_con_justicia_IA_asequible_para_un_futuro_sustentable.txt": "AnexoIA_Giovany_Ordóñez_Hernández_Uso_de_Herramientas_de_IA_Generativa.txt",
-    "Ensayo_Ian_El'hore_Quintana_¿Sueño_con_pantallas_¿O_con_pantallas_cumplo_mis_sueños.txt": "AnexoIA_Ian_Elhore_Sueño_Con_Pantallas.txt",
+    "Ensayo_Ian_El’hore_Quintana_¿Sueño_con_pantallas_¿O_con_pantallas_cumplo_mis_sueños.txt": "AnexoIA_Ian_Elhore_Sueño_Con_Pantallas.txt",
     "Ensayo_Imanol_Mendoza_Saenz_de_Buruaga_Trade-offs_en_la_era_de_la_IA_Lecciones_del_Pasado_y_Decisiones_para_el_Futuro.txt": "AnexoIA_Imanol_Mendoza_Proceso_creativo.txt",
     "Ensayo_Jorge_Gael_Santiago_Simón_Inclusión_de_otro_nivel_inteligencia_artificial_aplicada_a_la_accesibilidad.txt": "AnexoIA_Jorge_Gael_Santiago_Simon_Uso_de_IA_Inclusion_De_Otro_Nivel.txt",
     "Ensayo_Jorge_Rufino_de_León_Pérez_De_la_pantalla_al_intelecto.txt": "AnexoIA_Jorge_de_León_Inteligencia_De_La_Pantalla_Al_Intelecto.txt",
@@ -50,63 +48,3 @@ MATCHES_SEGUROS_IA = {
     "Ensayo_Victor_Arieh_Sánchez_Santiago_El_mañana_en_nuestras_manos_sembrando_futuros_con_inteligencia_y_esperanza.txt": "AnexoIA_Victor_Arieh_Sánchez_Santiago_El_mañana_en_nuestras_manos_sembrando_futuros_con_inteligencia_y_esperanza.txt",
     "Ensayo_YAEL_JESÚS_SÁNCHEZ_JUÁREZ_LA_INTELIGENCIA_ARTIFICIAL_COMO_UNA_HERRAMIENTA_DE_ASISTENCIA,_QUE_NUNCA_PODRÁ_SUSTITUIR_LA_INTUICIÓ.txt": "AnexoIA_Yael_Jesus_Sanchez_Juarez_La_IA_Como_Una_herramienta.txt"
 }
-
-# Para búsqueda rápida: dado un nombre de archivo de ensayo, obtener el anexo
-def obtener_anexo_ia(nombre_archivo_ensayo: str) -> str | None:
-    """
-    Obtiene el nombre del archivo de anexo correspondiente al ensayo.
-    
-    Args:
-        nombre_archivo_ensayo: Nombre del archivo del ensayo (con o sin extensión)
-    
-    Returns:
-        Nombre del archivo del anexo si existe match seguro, None si no existe
-    """
-    # Asegurar que tenga extensión .txt
-    if not nombre_archivo_ensayo.endswith('.txt'):
-        nombre_archivo_ensayo += '.txt'
-    
-    return MATCHES_SEGUROS_IA.get(nombre_archivo_ensayo)
-
-
-def tiene_anexo_ia(nombre_archivo_ensayo: str) -> bool:
-    """
-    Verifica si un ensayo tiene anexo de IA con match seguro.
-    
-    Args:
-        nombre_archivo_ensayo: Nombre del archivo del ensayo
-    
-    Returns:
-        True si existe match seguro, False en caso contrario
-    """
-    return obtener_anexo_ia(nombre_archivo_ensayo) is not None
-
-
-def cargar_texto_anexo(nombre_archivo_anexo: str, directorio: str = "Anexo_procesado") -> str | None:
-    """
-    Carga el contenido del archivo de anexo.
-    
-    Args:
-        nombre_archivo_anexo: Nombre del archivo del anexo
-        directorio: Directorio donde se encuentra el anexo
-    
-    Returns:
-        Contenido del anexo como string, None si no se puede leer
-    """
-    import os
-    
-    ruta_anexo = os.path.join(directorio, nombre_archivo_anexo)
-    
-    try:
-        with open(ruta_anexo, 'r', encoding='utf-8') as f:
-            return f.read()
-    except FileNotFoundError:
-        print(f"⚠️ Advertencia: Anexo no encontrado: {ruta_anexo}")
-        return None
-    except Exception as e:
-        print(f"❌ Error al leer anexo {ruta_anexo}: {e}")
-        return None
-
-
-# Lista de ensayos con anexo para consulta rápida
-ENSAYOS_CON_ANEXO = list(MATCHES_SEGUROS_IA.keys())

@@ -1,0 +1,63 @@
+# ================================================
+# Requirements for Flask Web Server
+# ================================================
+# Install: pip install -r requirements.txt
+
+# Core Web Framework
+flask>=3.0.0
+flask-sqlalchemy>=3.1.1
+werkzeug>=3.0.0
+
+# Authentication & Security
+bcrypt>=4.1.0
+PyJWT>=2.8.0
+
+# AI/ML - LangChain
+langchain>=0.1.0
+langchain-openai>=0.0.5
+langchain-core>=0.1.0
+
+# PDF Processing (required by parent modules)
+pypdf>=4.0.0
+pdfplumber>=0.11.0
+
+# Data Validation
+pydantic>=2.0.0
+
+# Environment Variables
+python-dotenv>=1.0.0
+
+# Database
+sqlalchemy>=2.0.0
+
+# ================================================
+# Optional but Recommended
+# ================================================
+
+# Performance & Caching
+flask-caching>=2.1.0
+
+# Production Server (WSGI)
+gunicorn>=21.2.0  # For production deployment
+
+# ================================================
+# Installation Instructions
+# ================================================
+#
+# 1. Create virtual environment:
+#    python -m venv venv
+#    source venv/bin/activate  # macOS/Linux
+#    venv\Scripts\activate     # Windows
+#
+# 2. Install dependencies:
+#    pip install -r requirements.txt
+#
+# 3. Set environment variables:
+#    Copy .env.example to .env and configure
+#
+# 4. Run development server:
+#    python app.py
+#
+# 5. Run production server:
+#    gunicorn -w 4 -b 0.0.0.0:5001 app:app
+#

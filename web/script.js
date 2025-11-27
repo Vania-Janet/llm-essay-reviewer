@@ -13,7 +13,9 @@ const newEvaluationBtn = document.getElementById('newEvaluationBtn');
 
 // Chat elements
 const chatPanel = document.getElementById('chatPanel');
-const chatToggle = document.getElementById('chatToggle');
+const chatToggle = document.getElementById('chatToggle'); // Mantener para compatibilidad
+const chatWidgetBtn = document.getElementById('chatWidgetTrigger');
+const closeChatBtn = document.getElementById('closeChatBtn');
 const chatMessages = document.getElementById('chatMessages');
 const chatInput = document.getElementById('chatInput');
 const chatSendBtn = document.getElementById('chatSendBtn');
@@ -26,6 +28,19 @@ const scoreEditor = document.getElementById('scoreEditor');
 const closeScoreEditor = document.getElementById('closeScoreEditor');
 const editTotalScore = document.getElementById('editTotalScore');
 const saveScoreBtn = document.getElementById('saveScoreBtn');
+
+// Judge evaluation elements
+const judgeEvaluationBtn = document.getElementById('judgeEvaluationBtn');
+const judgeEvaluationSection = document.getElementById('judgeEvaluationSection');
+const backFromJudgeBtn = document.getElementById('backFromJudgeBtn');
+const essaySelectForEval = document.getElementById('essaySelectForEval');
+const criteriaCardsDisplay = document.getElementById('criteriaCardsDisplay');
+const criteriaFieldsContainer = document.getElementById('criteriaFieldsContainer');
+const refreshCriteriaPdfBtn = document.getElementById('refreshCriteriaPdfBtn');
+const aiAssistBtn = document.getElementById('aiAssistBtn');
+const saveEvaluationBtn = document.getElementById('saveEvaluationBtn');
+const totalScoreValue = document.getElementById('totalScoreValue');
+const manualEvaluationForm = document.getElementById('manualEvaluationForm');
 const editGeneralCommentBtn = document.getElementById('editGeneralCommentBtn');
 
 // History and comparison elements
@@ -48,6 +63,150 @@ let currentEvaluation = null;
 let currentEssayText = null;
 let isEditMode = false;
 let selectedEssays = new Set();
+
+// ============= AUTENTICACIÓN =============
+const AUTH_TOKEN_KEY = 'auth_token';
+const USER_KEY = 'user';
+
+function getAuthToken() {
+    return localStorage.getItem(AUTH_TOKEN_KEY);
+}
+
+function getUser() {
+    const userStr = localStorage.getItem(USER_KEY);
+    return userStr ? JSON.parse(userStr) : null;
+}
+
+function setAuthToken(token) {
+    localStorage.setItem(AUTH_TOKEN_KEY, token);
+}
+
+function clearAuth() {
+    localStorage.removeItem(AUTH_TOKEN_KEY);
+    localStorage.removeItem(USER_KEY);
+}
+
+function logout() {
+    clearAuth();
+    window.location.href = '/login.html';
+}
+
+// Verificar autenticación al cargar la página
+async function checkAuth() {
+    const token = getAuthToken();
+    
+    if (!token) {
+        window.location.href = '/login.html';
+        return false;
+    }
+    
+    try {
+        const response = await fetch('/api/verify-token', {
+            headers: {
+                'Authorization': `Bearer ${token}`
+            }
+        });
+        
+        if (!response.ok) {
+            clearAuth();
+            window.location.href = '/login.html';
+            return false;
+        }
+        
+        return true;
+    } catch (error) {
+        console.error('Error verificando autenticación:', error);
+        clearAuth();
+        window.location.href = '/login.html';
+        return false;
+    }
+}
+
+// Función helper para hacer requests autenticados
+async function authenticatedFetch(url, options = {}) {
+    const token = getAuthToken();
+    
+    if (!token) {
+        window.location.href = '/login.html';
+        throw new Error('No autenticado');
+    }
+    
+    const headers = {
+        ...options.headers,
+        'Authorization': `Bearer ${token}`
+    };
+    
+    const response = await fetch(url, {
+        ...options,
+        headers
+    });
+    
+    if (response.status === 401) {
+        clearAuth();
+        window.location.href = '/login.html';
+        throw new Error('Sesión expirada');
+    }
+    
+    return response;
+}
+
+// Verificar autenticación al cargar
+window.addEventListener('DOMContentLoaded', async () => {
+    const isAuth = await checkAuth();
+    if (isAuth) {
+        const user = getUser();
+        console.log('Usuario autenticado:', user?.username);
+        
+        // Mostrar nombre de usuario
+        const userName = document.getElementById('userName');
+        if (userName && user) {
+            userName.textContent = `Hola, ${user.nombre_completo || user.username}`;
+        }
+        
+        // Configurar botón de logout
+        const logoutBtn = document.getElementById('logoutBtn');
+        if (logoutBtn) {
+            logoutBtn.addEventListener('click', logout);
+        }
+        
+        // Cargar la biblioteca de ensayos
+        loadEssaysLibrary();
+    }
+});
+
+// ============= FIN AUTENTICACIÓN =============
+
+// ============= PROTECCIÓN XSS =============
+
+/**
+ * Escapa caracteres HTML para prevenir ataques XSS
+ * @param {string} text - Texto a escapar
+ * @returns {string} - Texto seguro para insertar en HTML
+ */
+function escapeHtml(text) {
+    if (!text) return text;
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+}
+
+/**
+ * Sanitiza texto para uso seguro en innerHTML
+ * @param {string} text - Texto a sanitizar
+ * @returns {string} - Texto sanitizado
+ */
+function sanitizeText(text) {
+    if (!text) return '';
+    return String(text)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+}
+
+// ============= FIN PROTECCIÓN XSS =============
+
 let currentFileName = '';  // Para almacenar el nombre del archivo evaluado
 let allEssays = [];  // Para almacenar todos los ensayos cargados
 
@@ -57,8 +216,11 @@ fileInput.addEventListener('change', handleFileSelect);
 evaluateBtn.addEventListener('click', evaluateEssay);
 newEvaluationBtn.addEventListener('click', resetEvaluation);
 
-// Chat event listeners
-chatToggle.addEventListener('click', toggleChat);
+// Chat event listeners - Nuevo sistema flotante
+if (chatWidgetBtn) chatWidgetBtn.addEventListener('click', toggleChat);
+if (closeChatBtn) closeChatBtn.addEventListener('click', toggleChat);
+if (chatToggle) chatToggle.addEventListener('click', toggleChat); // Mantener compatibilidad
+
 chatSendBtn.addEventListener('click', sendChatMessage);
 chatInput.addEventListener('keydown', (e) => {
     if (e.key === 'Enter' && !e.shiftKey) {
@@ -95,6 +257,31 @@ if (backFromUploadBtn) backFromUploadBtn.addEventListener('click', returnToLibra
 if (backFromResultsBtn) backFromResultsBtn.addEventListener('click', returnToLibrary);
 if (backFromHistoryBtn) backFromHistoryBtn.addEventListener('click', returnToLibrary);
 if (backFromComparisonBtn) backFromComparisonBtn.addEventListener('click', returnToLibrary);
+
+// Judge evaluation event listeners
+if (judgeEvaluationBtn) judgeEvaluationBtn.addEventListener('click', showJudgeEvaluation);
+if (backFromJudgeBtn) backFromJudgeBtn.addEventListener('click', returnToLibrary);
+if (refreshCriteriaPdfBtn) refreshCriteriaPdfBtn.addEventListener('click', loadJudgeCriteria);
+if (aiAssistBtn) aiAssistBtn.addEventListener('click', requestAIAssistance);
+if (saveEvaluationBtn) saveEvaluationBtn.addEventListener('click', saveManualEvaluation);
+if (essaySelectForEval) essaySelectForEval.addEventListener('change', onEssaySelectedForEval);
+
+// Botón de descarga Excel
+const downloadExcelBtn = document.getElementById('downloadExcelBtn');
+if (downloadExcelBtn) downloadExcelBtn.addEventListener('click', downloadExcel);
+
+// Botón de estadísticas
+const showStatsBtn = document.getElementById('showStatsBtn');
+if (showStatsBtn) showStatsBtn.addEventListener('click', showStatsDashboard);
+
+// Botón de cerrar PDF
+const closePdfBtn = document.getElementById('closePdfBtn');
+if (closePdfBtn) closePdfBtn.addEventListener('click', () => {
+    const pdfViewerContainer = document.getElementById('pdfViewerContainer');
+    if (pdfViewerContainer) {
+        pdfViewerContainer.style.display = 'none';
+    }
+});
 
 // Cargar biblioteca al iniciar
 window.addEventListener('DOMContentLoaded', loadEssaysLibrary);
@@ -177,8 +364,8 @@ async function evaluateEssay() {
         const formData = new FormData();
         formData.append('file', selectedFile);
 
-        // Enviar al backend
-        const response = await fetch('/evaluate', {
+        // Enviar al backend con autenticación
+        const response = await authenticatedFetch('/evaluate', {
             method: 'POST',
             body: formData
         });
@@ -210,6 +397,34 @@ function displayResults(evaluation) {
     // Ocultar procesamiento y mostrar resultados
     processingSection.style.display = 'none';
     resultsSection.style.display = 'block';
+
+    // Mostrar título del ensayo
+    const essayTitle = document.getElementById('essayTitle');
+    const essayMetadata = document.getElementById('essayMetadata');
+    
+    if (evaluation.nombre_archivo) {
+        // Extraer el nombre del archivo sin la extensión
+        let displayName = evaluation.nombre_archivo.replace('_procesado.txt', '').replace('.txt', '');
+        // Reemplazar guiones bajos por espacios y capitalizar
+        displayName = displayName.split('_').map(word => 
+            word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()
+        ).join(' ');
+        
+        essayTitle.textContent = displayName;
+        
+        // Mostrar metadatos si están disponibles
+        if (evaluation.fecha_evaluacion) {
+            const fecha = new Date(evaluation.fecha_evaluacion);
+            essayMetadata.innerHTML = `
+                <span class="metadata-item">📅 Evaluado: ${fecha.toLocaleDateString('es-MX', { 
+                    year: 'numeric', 
+                    month: 'long', 
+                    day: 'numeric' 
+                })}</span>
+                ${evaluation.tiene_anexo ? '<span class="metadata-item">📎 Con Anexo IA</span>' : ''}
+            `;
+        }
+    }
 
     // Puntuación total
     const totalScore = evaluation.puntuacion_total || 0;
@@ -376,16 +591,9 @@ function resetEvaluation() {
     window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
-// Chat functionality
+// Chat functionality - Nuevo sistema flotante
 function toggleChat() {
-    chatPanel.classList.toggle('minimized');
-    const icon = chatToggle.querySelector('svg path');
-    
-    if (chatPanel.classList.contains('minimized')) {
-        icon.setAttribute('d', 'M19 9l-7 7-7-7');
-    } else {
-        icon.setAttribute('d', 'M6 18L18 6M6 6l12 12');
-    }
+    chatPanel.classList.toggle('active');
 }
 
 function enableChat() {
@@ -473,7 +681,7 @@ async function sendChatMessage() {
     chatStatus.style.display = 'flex';
     
     try {
-        const response = await fetch('/chat', {
+        const response = await authenticatedFetch('/chat', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
@@ -820,7 +1028,7 @@ async function showEssaysHistory() {
     compareSelectedBtn.disabled = true;
     
     try {
-        const response = await fetch('/essays');
+        const response = await authenticatedFetch('/essays');
         if (!response.ok) throw new Error('Error al cargar ensayos');
         
         const essays = await response.json();
@@ -834,10 +1042,10 @@ async function showEssaysHistory() {
             <div class="essay-item" data-id="${essay.id}">
                 <input type="checkbox" class="essay-checkbox" data-id="${essay.id}">
                 <div class="essay-info">
-                    <div class="essay-name">${essay.nombre_archivo}</div>
+                    <div class="essay-name">${escapeHtml(essay.nombre_archivo)}</div>
                     <div class="essay-meta">
                         <span>📅 ${new Date(essay.fecha_evaluacion).toLocaleString('es-MX')}</span>
-                        <span>📄 ${essay.texto_preview}</span>
+                        <span>📄 ${escapeHtml(essay.texto_preview || '')}</span>
                     </div>
                 </div>
                 <div class="essay-score">${essay.puntuacion_total.toFixed(2)}/5.00</div>
@@ -851,7 +1059,7 @@ async function showEssaysHistory() {
         
     } catch (error) {
         console.error('Error:', error);
-        essaysList.innerHTML = `<p style="color: red; text-align: center;">Error al cargar ensayos: ${error.message}</p>`;
+        essaysList.innerHTML = `<p style="color: red; text-align: center;">Error al cargar ensayos: ${escapeHtml(error.message)}</p>`;
     }
 }
 
@@ -886,7 +1094,7 @@ async function compareEssays() {
     comparisonContent.innerHTML = '<div class="loader"></div><p>Generando análisis comparativo...</p>';
     
     try {
-        const response = await fetch('/compare', {
+        const response = await authenticatedFetch('/compare', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
@@ -943,7 +1151,7 @@ async function compareEssays() {
         
     } catch (error) {
         console.error('Error:', error);
-        comparisonContent.innerHTML = `<p style="color: red; text-align: center;">Error: ${error.message}</p>`;
+        comparisonContent.innerHTML = `<p style="color: red; text-align: center;">Error: ${escapeHtml(error.message)}</p>`;
     }
 }
 
@@ -955,7 +1163,26 @@ function hideComparison() {
 // Funciones para la biblioteca de ensayos
 async function loadEssaysLibrary() {
     try {
-        const response = await fetch('/essays');
+        // Mostrar skeleton loading
+        libraryList.innerHTML = `
+            <div class="skeleton-card">
+                <div class="skeleton-text" style="width: 60%;"></div>
+                <div class="skeleton-text" style="width: 40%;"></div>
+                <div class="skeleton-text" style="width: 50%;"></div>
+            </div>
+            <div class="skeleton-card">
+                <div class="skeleton-text" style="width: 55%;"></div>
+                <div class="skeleton-text" style="width: 45%;"></div>
+                <div class="skeleton-text" style="width: 35%;"></div>
+            </div>
+            <div class="skeleton-card">
+                <div class="skeleton-text" style="width: 50%;"></div>
+                <div class="skeleton-text" style="width: 60%;"></div>
+                <div class="skeleton-text" style="width: 40%;"></div>
+            </div>
+        `;
+        
+        const response = await authenticatedFetch('/essays');
         if (!response.ok) throw new Error('Error al cargar ensayos');
         
         allEssays = await response.json();
@@ -1026,8 +1253,8 @@ function displayEssaysLibrary(essays) {
             ? '<span class="anexo-indicator anexo-ok">✓ Anexo IA</span>'
             : '<span class="anexo-indicator anexo-missing">⚠️ Sin Anexo IA</span>';
         
-        const title = extractTitle(essay.nombre_archivo);
-        const author = extractAuthor(essay.nombre_archivo);
+        const title = escapeHtml(extractTitle(essay.nombre_archivo));
+        const author = escapeHtml(extractAuthor(essay.nombre_archivo));
         
         return `
             <div class="essay-card" data-id="${essay.id}">
@@ -1049,9 +1276,9 @@ function displayEssaysLibrary(essays) {
                         })}
                     </div>
                 </div>
-                <div class="essay-card-preview">${essay.texto_preview}</div>
+                <div class="essay-card-preview">${escapeHtml(essay.texto_preview || '')}</div>
                 <div class="essay-card-actions">
-                    <button class="btn-view-essay" onclick="viewEssayDetails(${essay.id})">
+                    <button class="btn-view-essay" onclick="viewEssayDetails(${essay.id}); event.stopPropagation();">
                         Ver Detalles
                     </button>
                 </div>
@@ -1059,10 +1286,26 @@ function displayEssaysLibrary(essays) {
         `;
     }).join('');
     
-    // Agregar event listeners a los checkboxes
-    document.querySelectorAll('.essay-card-checkbox').forEach(checkbox => {
-        checkbox.addEventListener('change', handleLibrarySelection);
+    // Agregar event listeners a los checkboxes y tarjetas
+    document.querySelectorAll('.essay-card').forEach(card => {
+        const checkbox = card.querySelector('.essay-card-checkbox');
+        const essayId = parseInt(checkbox.dataset.id);
+        
+        // Click en toda la tarjeta para seleccionar
+        card.addEventListener('click', (e) => {
+            // Ignorar clics en botones o enlaces
+            if (e.target.closest('.btn-view-essay') || e.target.closest('.essay-card-checkbox')) {
+                return;
+            }
+            
+            // Toggle el checkbox
+            checkbox.checked = !checkbox.checked;
+            checkbox.dispatchEvent(new Event('change'));
+        });
+        
+        // Prevenir propagación del checkbox
         checkbox.addEventListener('click', (e) => e.stopPropagation());
+        checkbox.addEventListener('change', handleLibrarySelection);
     });
 }
 
@@ -1087,7 +1330,7 @@ function handleLibrarySelection(e) {
 
 async function viewEssayDetails(essayId) {
     try {
-        const response = await fetch(`/essays/${essayId}`);
+        const response = await authenticatedFetch(`/essays/${essayId}`);
         if (!response.ok) throw new Error('Error al cargar ensayo');
         
         const essay = await response.json();
@@ -1096,7 +1339,9 @@ async function viewEssayDetails(essayId) {
         currentEvaluation = {
             id: essay.id,
             ...essay.evaluacion,  // Extraer la evaluación del objeto
-            nombre_archivo: essay.nombre_archivo
+            nombre_archivo: essay.nombre_archivo,
+            fecha_evaluacion: essay.fecha_evaluacion,
+            tiene_anexo: essay.tiene_anexo
         };
         currentEssayText = essay.texto_completo;
         currentFileName = essay.nombre_archivo.replace('.pdf', '');
@@ -1115,7 +1360,10 @@ async function viewEssayDetails(essayId) {
         document.querySelector(`[data-id="${essayId}"]`).closest('.essay-card').classList.add('selected');
         
         // Mostrar resultados - displayResults espera el objeto de evaluación
-        displayResults(essay.evaluacion);
+        displayResults(currentEvaluation);
+        
+        // Cargar PDF
+        loadPDF(essayId);
         
         // Ocultar biblioteca y mostrar resultados
         essaysLibrarySection.style.display = 'none';
@@ -1134,6 +1382,37 @@ async function viewEssayDetails(essayId) {
     }
 }
 
+async function loadPDF(essayId) {
+    const pdfViewerContainer = document.getElementById('pdfViewerContainer');
+    const pdfViewer = document.getElementById('pdfViewer');
+    const pdfError = document.getElementById('pdfError');
+    
+    try {
+        // Construir URL del PDF
+        const pdfUrl = `/essays/${essayId}/pdf`;
+        
+        // Verificar que el PDF existe
+        const response = await authenticatedFetch(pdfUrl, { method: 'HEAD' });
+        
+        if (response.ok) {
+            // Cargar PDF en el iframe
+            pdfViewer.src = pdfUrl;
+            pdfViewerContainer.style.display = 'block';
+            pdfError.style.display = 'none';
+        } else {
+            // Mostrar error
+            pdfViewerContainer.style.display = 'block';
+            pdfViewer.style.display = 'none';
+            pdfError.style.display = 'flex';
+        }
+    } catch (error) {
+        console.error('Error al cargar PDF:', error);
+        pdfViewerContainer.style.display = 'block';
+        pdfViewer.style.display = 'none';
+        pdfError.style.display = 'flex';
+    }
+}
+
 function showUploadSection() {
     essaysLibrarySection.style.display = 'none';
     uploadSection.style.display = 'block';
@@ -1146,6 +1425,11 @@ function returnToLibrary() {
     resultsSection.style.display = 'none';
     essaysHistorySection.style.display = 'none';
     comparisonSection.style.display = 'none';
+    judgeEvaluationSection.style.display = 'none';
+    
+    // Ocultar gestión de criterios si existe
+    const criteriaSection = document.getElementById('criteriaManagementSection');
+    if (criteriaSection) criteriaSection.style.display = 'none';
     
     // Show library
     essaysLibrarySection.style.display = 'block';
@@ -1163,6 +1447,714 @@ function updateChatbotContext() {
     } else if (numSelected === 1) {
         chatInput.placeholder = "Pregunta sobre este ensayo...";
     } else {
-        chatInput.placeholder = `Pregunta sobre los ${numSelected} ensayos seleccionados...`;
+        chatInput.placeholder = `Pregunta sobre estos ${numSelected} ensayos...`;
+    }
+}
+
+// Función para descargar Excel con todos los ensayos
+async function downloadExcel() {
+    try {
+        const downloadBtn = document.getElementById('downloadExcelBtn');
+        const originalText = downloadBtn.innerHTML;
+        
+        // Mostrar estado de descarga
+        downloadBtn.disabled = true;
+        downloadBtn.innerHTML = '⏳ Descargando...';
+        
+        const response = await authenticatedFetch('/essays/export/csv');
+        
+        if (!response.ok) {
+            throw new Error('Error al generar el archivo');
+        }
+        
+        // Obtener el blob del archivo
+        const blob = await response.blob();
+        
+        // Crear un enlace temporal para descargar
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.style.display = 'none';
+        a.href = url;
+        
+        // Obtener el nombre del archivo desde el header o usar uno por defecto
+        const contentDisposition = response.headers.get('content-disposition');
+        let filename = 'ensayos_evaluados.csv';
+        if (contentDisposition) {
+            const filenameMatch = contentDisposition.match(/filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/);
+            if (filenameMatch && filenameMatch[1]) {
+                filename = filenameMatch[1].replace(/['"]/g, '');
+            }
+        }
+        
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        
+        // Limpiar
+        window.URL.revokeObjectURL(url);
+        document.body.removeChild(a);
+        
+        // Restaurar botón
+        downloadBtn.disabled = false;
+        downloadBtn.innerHTML = originalText;
+        
+        // Mostrar mensaje de éxito
+        showNotification('✅ Excel descargado exitosamente', 'success');
+        
+    } catch (error) {
+        console.error('Error al descargar Excel:', error);
+        
+        const downloadBtn = document.getElementById('downloadExcelBtn');
+        downloadBtn.disabled = false;
+        downloadBtn.innerHTML = '📊 Descargar Excel';
+        
+        showNotification('❌ Error al descargar Excel: ' + error.message, 'error');
+    }
+}
+
+// Función auxiliar para mostrar notificaciones
+function showNotification(message, type = 'info') {
+    const notification = document.createElement('div');
+    notification.style.cssText = `
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        background: ${type === 'success' ? '#dcfce7' : type === 'error' ? '#fee2e2' : '#e0f2fe'};
+        color: ${type === 'success' ? '#166534' : type === 'error' ? '#991b1b' : '#0c4a6e'};
+        padding: 1rem 1.5rem;
+        border-radius: 8px;
+        box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+        z-index: 10000;
+        font-weight: 500;
+        animation: slideIn 0.3s ease;
+    `;
+    notification.textContent = message;
+    
+    document.body.appendChild(notification);
+    
+    setTimeout(() => {
+        notification.style.animation = 'slideOut 0.3s ease';
+        setTimeout(() => notification.remove(), 300);
+    }, 3000);
+}
+
+// ============================================
+// STATISTICS DASHBOARD
+// ============================================
+
+let scoresChartInstance = null;
+let criteriaRadarChartInstance = null;
+
+async function showStatsDashboard() {
+    if (!allEssays || allEssays.length === 0) {
+        showNotification('❌ No hay ensayos disponibles para mostrar estadísticas', 'error');
+        return;
+    }
+
+    // Mostrar modal
+    const statsModal = document.getElementById('statsModal');
+    statsModal.style.display = 'block';
+
+    // Calcular estadísticas
+    const scores = allEssays
+        .map(e => e.evaluacion?.puntuacion_total || e.puntuacion_total)
+        .filter(s => s !== null && s !== undefined);
+
+    if (scores.length === 0) {
+        showNotification('❌ No hay calificaciones disponibles', 'error');
+        statsModal.style.display = 'none';
+        return;
+    }
+
+    const total = scores.length;
+    const sum = scores.reduce((a, b) => a + b, 0);
+    const avg = sum / total;
+    const max = Math.max(...scores);
+    const min = Math.min(...scores);
+
+    // Actualizar tarjetas de resumen
+    document.getElementById('totalEssays').textContent = total;
+    document.getElementById('avgScore').textContent = avg.toFixed(2);
+    document.getElementById('highestScore').textContent = max.toFixed(2);
+    document.getElementById('lowestScore').textContent = min.toFixed(2);
+
+    // Crear gráficos
+    createScoresChart(scores);
+    await createCriteriaRadarChart();
+}
+
+function createScoresChart(scores) {
+    const ctx = document.getElementById('scoresChart');
+    
+    // Destruir gráfico anterior si existe
+    if (scoresChartInstance) {
+        scoresChartInstance.destroy();
+    }
+
+    // Contar ensayos por rango
+    const ranges = [
+        { label: '0-1', min: 0, max: 1, color: '#ef4444' },
+        { label: '1-2', min: 1, max: 2, color: '#f97316' },
+        { label: '2-3', min: 2, max: 3, color: '#f59e0b' },
+        { label: '3-4', min: 3, max: 4, color: '#3b82f6' },
+        { label: '4-5', min: 4, max: 5, color: '#10b981' }
+    ];
+
+    const data = ranges.map(range => 
+        scores.filter(s => s >= range.min && s < range.max).length
+    );
+    
+    // Agregar los que tienen exactamente 5
+    data[data.length - 1] += scores.filter(s => s === 5).length;
+
+    scoresChartInstance = new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: ranges.map(r => r.label),
+            datasets: [{
+                label: '# de Ensayos',
+                data: data,
+                backgroundColor: ranges.map(r => r.color),
+                borderColor: ranges.map(r => r.color),
+                borderWidth: 1
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: true,
+            plugins: {
+                legend: {
+                    display: false
+                },
+                title: {
+                    display: false
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    ticks: {
+                        stepSize: 1
+                    }
+                }
+            }
+        }
+    });
+}
+
+async function createCriteriaRadarChart() {
+    const ctx = document.getElementById('criteriaRadarChart');
+    
+    // Destruir gráfico anterior si existe
+    if (criteriaRadarChartInstance) {
+        criteriaRadarChartInstance.destroy();
+    }
+
+    // Intentar obtener datos reales de criterios
+    try {
+        const criteriaAverages = calculateCriteriaAverages();
+        
+        if (criteriaAverages.labels.length === 0) {
+            // Si no hay datos de criterios, usar datos de ejemplo
+            createExampleRadarChart(ctx);
+            return;
+        }
+
+        criteriaRadarChartInstance = new Chart(ctx, {
+            type: 'radar',
+            data: {
+                labels: criteriaAverages.labels,
+                datasets: [{
+                    label: 'Promedio de la Generación',
+                    data: criteriaAverages.data,
+                    backgroundColor: 'rgba(59, 130, 246, 0.2)',
+                    borderColor: '#3b82f6',
+                    borderWidth: 2,
+                    pointBackgroundColor: '#3b82f6',
+                    pointBorderColor: '#fff',
+                    pointHoverBackgroundColor: '#fff',
+                    pointHoverBorderColor: '#3b82f6'
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: true,
+                scales: {
+                    r: {
+                        beginAtZero: true,
+                        max: 5,
+                        ticks: {
+                            stepSize: 1
+                        }
+                    }
+                },
+                plugins: {
+                    legend: {
+                        display: true,
+                        position: 'top'
+                    }
+                }
+            }
+        });
+    } catch (error) {
+        console.error('Error creando gráfico de radar:', error);
+        createExampleRadarChart(ctx);
+    }
+}
+
+function calculateCriteriaAverages() {
+    const criteriaMap = new Map();
+    let essayCount = 0;
+
+    // Iterar sobre todos los ensayos y acumular puntajes por criterio
+    allEssays.forEach(essay => {
+        const evaluacion = essay.evaluacion || essay;
+        const criterios = evaluacion.criterios || [];
+        
+        if (criterios.length > 0) {
+            essayCount++;
+            criterios.forEach(criterio => {
+                if (criterio.calificacion !== null && criterio.calificacion !== undefined) {
+                    const nombre = criterio.nombre || criterio.criterio;
+                    if (!criteriaMap.has(nombre)) {
+                        criteriaMap.set(nombre, []);
+                    }
+                    criteriaMap.get(nombre).push(criterio.calificacion);
+                }
+            });
+        }
+    });
+
+    // Calcular promedios
+    const labels = [];
+    const data = [];
+
+    criteriaMap.forEach((values, name) => {
+        const avg = values.reduce((a, b) => a + b, 0) / values.length;
+        labels.push(name);
+        data.push(parseFloat(avg.toFixed(2)));
+    });
+
+    return { labels, data };
+}
+
+function createExampleRadarChart(ctx) {
+    criteriaRadarChartInstance = new Chart(ctx, {
+        type: 'radar',
+        data: {
+            labels: ['Técnica', 'Creatividad', 'Temática', 'Bienestar', 'IA', 'Impacto'],
+            datasets: [{
+                label: 'Promedio de la Generación',
+                data: [3.8, 4.2, 3.5, 4.0, 2.9, 3.6],
+                backgroundColor: 'rgba(59, 130, 246, 0.2)',
+                borderColor: '#3b82f6',
+                borderWidth: 2,
+                pointBackgroundColor: '#3b82f6',
+                pointBorderColor: '#fff',
+                pointHoverBackgroundColor: '#fff',
+                pointHoverBorderColor: '#3b82f6'
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: true,
+            scales: {
+                r: {
+                    beginAtZero: true,
+                    max: 5,
+                    ticks: {
+                        stepSize: 1
+                    }
+                }
+            },
+            plugins: {
+                legend: {
+                    display: true,
+                    position: 'top'
+                },
+                title: {
+                    display: true,
+                    text: '(Datos de ejemplo)',
+                    font: {
+                        size: 11,
+                        style: 'italic'
+                    }
+                }
+            }
+        }
+    });
+}
+
+// ============================================
+// JUDGE EVALUATION FUNCTIONS
+// ============================================
+
+let currentJudgeCriteria = [];
+let currentEssayForEval = null;
+
+// Mostrar sección de evaluación manual
+async function showJudgeEvaluation() {
+    essaysLibrarySection.style.display = 'none';
+    uploadSection.style.display = 'none';
+    resultsSection.style.display = 'none';
+    criteriaSectionDiv.style.display = 'none';
+    judgeEvaluationSection.style.display = 'block';
+    
+    // Cargar criterios y ensayos
+    await loadJudgeCriteria();
+    await loadEssaysForSelection();
+}
+
+// Cargar criterios del usuario
+async function loadJudgeCriteria() {
+    try {
+        const token = localStorage.getItem('token');
+        const response = await fetch('/api/criterios', {
+            headers: {
+                'Authorization': `Bearer ${token}`
+            }
+        });
+        
+        if (!response.ok) throw new Error('Error al cargar criterios');
+        
+        const data = await response.json();
+        currentJudgeCriteria = data.criterios || [];
+        
+        renderJudgeCriteriaDisplay();
+        generateEvaluationFields();
+        
+    } catch (error) {
+        console.error('Error al cargar criterios:', error);
+        showNotification('Error al cargar criterios personalizados', 'error');
+    }
+}
+
+// Renderizar criterios en el panel izquierdo
+function renderJudgeCriteriaDisplay() {
+    if (!criteriaCardsDisplay) return;
+    
+    if (currentJudgeCriteria.length === 0) {
+        criteriaCardsDisplay.innerHTML = `
+            <div class="empty-state">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" style="width: 48px; height: 48px; color: #94a3b8; margin-bottom: 1rem;">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                </svg>
+                <h3 style="color: #64748b; margin: 0 0 0.5rem 0;">No hay criterios personalizados</h3>
+                <p style="color: #94a3b8; font-size: 0.9rem;">Define tus criterios de evaluación primero para poder usar esta función.</p>
+            </div>
+        `;
+        return;
+    }
+    
+    criteriaCardsDisplay.innerHTML = currentJudgeCriteria
+        .sort((a, b) => a.orden - b.orden)
+        .map(criterio => `
+            <div class="criteria-view-card">
+                <div class="criteria-view-header">
+                    <div class="criteria-view-title">
+                        <span>${criterio.icono || '📋'}</span>
+                        <span>${criterio.nombre}</span>
+                    </div>
+                    <div class="criteria-view-weight">${criterio.peso}%</div>
+                </div>
+                <div class="criteria-view-description">${criterio.descripcion || 'Sin descripción'}</div>
+            </div>
+        `).join('');
+}
+
+// Generar campos de evaluación dinámicamente
+function generateEvaluationFields() {
+    if (!criteriaFieldsContainer) return;
+    
+    if (currentJudgeCriteria.length === 0) {
+        criteriaFieldsContainer.innerHTML = `
+            <div class="empty-state" style="text-align: center; padding: 2rem;">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" style="width: 64px; height: 64px; color: #cbd5e1; margin: 0 auto 1rem;">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                </svg>
+                <h3 style="color: #64748b; margin: 0 0 0.5rem 0; font-size: 1.1rem;">No hay criterios definidos</h3>
+                <p style="color: #94a3b8; margin-bottom: 1.5rem;">Define tus criterios personalizados para poder evaluar ensayos manualmente.</p>
+                <button onclick="document.getElementById('criteriaManagementSection').style.display='block'; document.getElementById('judgeEvaluationSection').style.display='none'; essaysLibrarySection.style.display='none';" class="btn-primary" style="padding: 0.75rem 1.5rem; font-size: 0.95rem;">
+                    ⚙️ Configurar Criterios Ahora
+                </button>
+            </div>
+        `;
+        return;
+    }
+    
+    criteriaFieldsContainer.innerHTML = currentJudgeCriteria
+        .sort((a, b) => a.orden - b.orden)
+        .map(criterio => `
+            <div class="criterion-field" data-criterion-id="${criterio.id}">
+                <div class="criterion-field-header">
+                    <div class="criterion-field-title">
+                        <span>${criterio.icono || '📋'}</span>
+                        <span>${criterio.nombre}</span>
+                    </div>
+                    <div class="criterion-field-max">Máx: ${criterio.peso} pts</div>
+                </div>
+                <div class="criterion-field-input-group">
+                    <input 
+                        type="number" 
+                        class="score-input" 
+                        data-criterion-id="${criterio.id}"
+                        data-max="${criterio.peso}"
+                        min="0" 
+                        max="${criterio.peso}" 
+                        step="0.1"
+                        placeholder="0.0"
+                        required
+                    />
+                    <textarea 
+                        class="criterion-comments" 
+                        data-criterion-id="${criterio.id}"
+                        placeholder="Comentarios sobre ${criterio.nombre}..."
+                    ></textarea>
+                </div>
+            </div>
+        `).join('');
+    
+    // Agregar listeners para calcular total automáticamente
+    const scoreInputs = criteriaFieldsContainer.querySelectorAll('.score-input');
+    scoreInputs.forEach(input => {
+        input.addEventListener('input', calculateTotalScore);
+    });
+}
+
+// Calcular puntuación total
+function calculateTotalScore() {
+    const scoreInputs = criteriaFieldsContainer.querySelectorAll('.score-input');
+    let total = 0;
+    
+    scoreInputs.forEach(input => {
+        const value = parseFloat(input.value) || 0;
+        const max = parseFloat(input.dataset.max) || 0;
+        
+        // Validar que no exceda el máximo
+        if (value > max) {
+            input.value = max;
+            showNotification(`La puntuación no puede exceder ${max} puntos`, 'warning');
+        }
+        
+        total += parseFloat(input.value) || 0;
+    });
+    
+    if (totalScoreValue) {
+        totalScoreValue.textContent = total.toFixed(2);
+        
+        // Cambiar color según la puntuación
+        if (total >= 80) {
+            totalScoreValue.style.color = '#22c55e';
+        } else if (total >= 60) {
+            totalScoreValue.style.color = '#0ea5e9';
+        } else {
+            totalScoreValue.style.color = '#ef4444';
+        }
+    }
+}
+
+// Cargar ensayos para el selector
+async function loadEssaysForSelection() {
+    try {
+        const token = localStorage.getItem('token');
+        const response = await fetch('/api/ensayos', {
+            headers: {
+                'Authorization': `Bearer ${token}`
+            }
+        });
+        
+        if (!response.ok) throw new Error('Error al cargar ensayos');
+        
+        const data = await response.json();
+        const essays = data.ensayos || [];
+        
+        if (essaySelectForEval) {
+            essaySelectForEval.innerHTML = '<option value="">-- Seleccione un ensayo --</option>' + 
+                essays.map(essay => `
+                    <option value="${essay.id}">${essay.autor || 'Autor desconocido'} - ${essay.titulo || 'Sin título'}</option>
+                `).join('');
+        }
+        
+    } catch (error) {
+        console.error('Error al cargar ensayos:', error);
+        showNotification('Error al cargar la lista de ensayos', 'error');
+    }
+}
+
+// Al seleccionar un ensayo
+function onEssaySelectedForEval() {
+    const essayId = essaySelectForEval.value;
+    if (essayId) {
+        currentEssayForEval = parseInt(essayId);
+        // Aquí podrías cargar información adicional del ensayo si es necesario
+    } else {
+        currentEssayForEval = null;
+    }
+}
+
+// Solicitar asistencia de IA
+async function requestAIAssistance() {
+    if (!currentEssayForEval) {
+        showNotification('Selecciona un ensayo primero', 'warning');
+        return;
+    }
+    
+    if (currentJudgeCriteria.length === 0) {
+        showNotification('Define criterios personalizados antes de usar la IA', 'warning');
+        return;
+    }
+    
+    try {
+        aiAssistBtn.disabled = true;
+        aiAssistBtn.innerHTML = `
+            <svg class="spinner" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" width="20" height="20">
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+            </svg>
+            Procesando...
+        `;
+        
+        const token = localStorage.getItem('token');
+        
+        // Preparar datos de los criterios
+        const criteriosData = currentJudgeCriteria.map(c => ({
+            id: c.id,
+            nombre: c.nombre,
+            descripcion: c.descripcion,
+            peso: c.peso
+        }));
+        
+        const response = await fetch(`/api/evaluar_con_criterios/${currentEssayForEval}`, {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ criterios: criteriosData })
+        });
+        
+        if (!response.ok) throw new Error('Error en la evaluación con IA');
+        
+        const data = await response.json();
+        
+        // Rellenar los campos con las sugerencias de la IA
+        if (data.evaluacion) {
+            data.evaluacion.forEach(evalItem => {
+                const input = criteriaFieldsContainer.querySelector(`.score-input[data-criterion-id="${evalItem.criterio_id}"]`);
+                const textarea = criteriaFieldsContainer.querySelector(`.criterion-comments[data-criterion-id="${evalItem.criterio_id}"]`);
+                
+                if (input) input.value = evalItem.puntuacion || 0;
+                if (textarea) textarea.value = evalItem.comentario || '';
+            });
+            
+            calculateTotalScore();
+            showNotification('Evaluación asistida por IA completada', 'success');
+        }
+        
+    } catch (error) {
+        console.error('Error en asistencia de IA:', error);
+        showNotification('Error al obtener asistencia de IA', 'error');
+    } finally {
+        aiAssistBtn.disabled = false;
+        aiAssistBtn.innerHTML = `
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" width="20" height="20">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
+            </svg>
+            IA
+        `;
+    }
+}
+
+// Guardar evaluación manual
+async function saveManualEvaluation() {
+    if (!currentEssayForEval) {
+        showNotification('Selecciona un ensayo para evaluar', 'warning');
+        return;
+    }
+    
+    if (currentJudgeCriteria.length === 0) {
+        showNotification('No hay criterios definidos', 'warning');
+        return;
+    }
+    
+    // Validar que todos los campos estén llenos
+    const scoreInputs = criteriaFieldsContainer.querySelectorAll('.score-input');
+    let allFilled = true;
+    
+    scoreInputs.forEach(input => {
+        if (!input.value || input.value === '') {
+            allFilled = false;
+            input.style.borderColor = '#ef4444';
+        } else {
+            input.style.borderColor = '';
+        }
+    });
+    
+    if (!allFilled) {
+        showNotification('Completa todas las puntuaciones antes de guardar', 'warning');
+        return;
+    }
+    
+    try {
+        saveEvaluationBtn.disabled = true;
+        saveEvaluationBtn.innerHTML = `
+            <svg class="spinner" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" width="20" height="20">
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+            </svg>
+            Guardando...
+        `;
+        
+        // Recopilar datos de la evaluación
+        const evaluaciones = [];
+        scoreInputs.forEach(input => {
+            const criterioId = parseInt(input.dataset.criterionId);
+            const puntuacion = parseFloat(input.value);
+            const textarea = criteriaFieldsContainer.querySelector(`.criterion-comments[data-criterion-id="${criterioId}"]`);
+            const comentario = textarea ? textarea.value : '';
+            
+            evaluaciones.push({
+                criterio_id: criterioId,
+                puntuacion: puntuacion,
+                comentario: comentario
+            });
+        });
+        
+        const generalComments = document.getElementById('generalComments').value;
+        const totalScore = parseFloat(totalScoreValue.textContent);
+        
+        const token = localStorage.getItem('token');
+        const response = await fetch(`/api/guardar_evaluacion_manual/${currentEssayForEval}`, {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                evaluaciones: evaluaciones,
+                comentario_general: generalComments,
+                puntuacion_total: totalScore
+            })
+        });
+        
+        if (!response.ok) throw new Error('Error al guardar evaluación');
+        
+        showNotification('Evaluación guardada exitosamente', 'success');
+        
+        // Limpiar formulario
+        manualEvaluationForm.reset();
+        calculateTotalScore();
+        
+    } catch (error) {
+        console.error('Error al guardar evaluación:', error);
+        showNotification('Error al guardar la evaluación', 'error');
+    } finally {
+        saveEvaluationBtn.disabled = false;
+        saveEvaluationBtn.innerHTML = `
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" width="20" height="20">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+            </svg>
+            Guardar
+        `;
     }
 }
