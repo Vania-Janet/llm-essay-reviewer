@@ -146,8 +146,26 @@ Este comando:
 - ✅ Validación de fortaleza de contraseñas
 - ✅ Sesiones con expiración automática (24h)
 - ✅ HTTPS obligatorio en producción
+- ✅ SECRET_KEY persistente (no se invalidan sesiones al reiniciar)
 
-Ver documentación completa en: **[SECURITY.md](SECURITY.md)**
+**⚠️ IMPORTANTE para Producción:**
+Las claves secretas DEBEN estar en variables de entorno permanentes.
+Ver guía completa: **[SECURITY_SETUP.md](SECURITY_SETUP.md)**
+
+### Migración de Base de Datos (Si actualizas desde versión anterior) 🔄
+
+Si ya tenías ensayos evaluados con una versión anterior del sistema, ejecuta el script de migración:
+
+```bash
+python migrate_add_nombre_original.py
+```
+
+Este script:
+- ✅ Agrega el campo `nombre_archivo_original` a la tabla de ensayos
+- ✅ Preserva todos los datos existentes
+- ✅ Actualiza registros antiguos con compatibilidad hacia atrás
+
+**Nota:** Este paso es opcional si instalas el sistema por primera vez.
 
 ### Interfaz Web 
 La forma más sencilla de usar el sistema:

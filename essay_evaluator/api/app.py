@@ -3,65 +3,49 @@ Servidor web Flask para el evaluador de ensayos.
 """
 import os
 import sys
-import uuid
-import hashlib
 from pathlib import Path
 from datetime import datetime
-from concurrent.futures import ThreadPoolExecutor
 from flask import Flask, request, jsonify, send_from_directory, send_file
-from flask_limiter import Limiter
-from flask_limiter.util import get_remote_address
 from werkzeug.utils import secure_filename
 import io
 import csv
 import shutil  # Para copiar PDFs permanentemente
 
 # Agregar el directorio padre al path para importar los módulos
-sys.path.append(str(Path(__file__).parent.parent))
+sys.path.append(str(Path(__file__).parent.parent.parent))
 
-from agent import EvaluadorEnsayos
-from pdf_processor import PDFProcessor
-from database import db, Ensayo, Usuario, CriterioPersonalizado, EvaluacionJurado, init_db
-from sqlalchemy import or_
-from matches_ia import obtener_anexo_ia, tiene_anexo_ia, MATCHES_SEGUROS_IA
-from auth import AuthManager, require_auth, validate_password_strength
+from essay_evaluator.core.agent.evaluator import EvaluadorEnsayos
+from essay_evaluator.utils.pdf.processor import PDFProcessor
+from essay_evaluator.utils.database.connection import db, Ensayo, Usuario, CriterioPersonalizado, init_db
+from essay_evaluator.api.routes.auth import AuthManager, require_auth, validate_password_strength
+
+# TODO: Move to separate module
+# from matches_ia import obtener_anexo_ia, tiene_anexo_ia, MATCHES_SEGUROS_IA
 
 # Importar para el chat
 from langchain_openai import ChatOpenAI
 from langchain_core.prompts import ChatPromptTemplate
 
-app = Flask(__name__, static_folder='.')
+# Get the base directory (essay-agent root)
+BASE_DIR = Path(__file__).parent.parent.parent
+STATIC_DIR = Path(__file__).parent.parent / 'web' / 'static'
+TEMPLATE_DIR = Path(__file__).parent.parent / 'web' / 'templates'
+
+app = Flask(__name__, 
+            static_folder=str(STATIC_DIR),
+            template_folder=str(TEMPLATE_DIR))
 app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16MB max file size
-app.config['UPLOAD_FOLDER'] = Path(__file__).parent / 'uploads'
-app.config['PERMANENT_PDF_FOLDER'] = Path(__file__).parent.parent / 'pdfs_procesado'
-app.config['PERMANENT_ANEXO_FOLDER'] = Path(__file__).parent.parent / 'Anexo_procesado'
+app.config['UPLOAD_FOLDER'] = BASE_DIR / 'essay_evaluator' / 'data' / 'raw'
 
 # Configuración de seguridad
 is_production = os.getenv('FLASK_ENV') == 'production'
-
-# SECRET_KEY: CRÍTICO - No usar os.urandom() porque cambia en cada reinicio
-# En producción DEBE estar en variable de entorno FLASK_SECRET_KEY
-# En desarrollo usamos un valor fijo para evitar pérdida de sesiones
-flask_secret = os.getenv('FLASK_SECRET_KEY')
-if not flask_secret:
-    if is_production:
-        raise ValueError(
-            "FLASK_SECRET_KEY es requerida en producción. "
-            "Configura la variable de entorno FLASK_SECRET_KEY."
-        )
-    # Desarrollo: usar clave fija (NO USAR EN PRODUCCIÓN)
-    flask_secret = 'dev-secret-key-CHANGE-THIS-IN-PRODUCTION-12345678'
-    print("⚠️  WARNING: Usando SECRET_KEY de desarrollo. NO usar en producción.")
-
-app.config['SECRET_KEY'] = flask_secret
+app.config['SECRET_KEY'] = os.getenv('FLASK_SECRET_KEY') or os.urandom(24)
 app.config['SESSION_COOKIE_SECURE'] = is_production  # Solo HTTPS en producción
 app.config['SESSION_COOKIE_HTTPONLY'] = True  # Prevenir acceso JavaScript
 app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'  # CSRF protection
 
-# Crear directorios si no existen
+# Crear directorio de uploads si no existe
 app.config['UPLOAD_FOLDER'].mkdir(exist_ok=True)
-app.config['PERMANENT_PDF_FOLDER'].mkdir(exist_ok=True)
-app.config['PERMANENT_ANEXO_FOLDER'].mkdir(exist_ok=True)
 
 # Inicializar la base de datos
 init_db(app)
@@ -72,14 +56,6 @@ pdf_processor = PDFProcessor()
 
 # Inicializar gestor de autenticación
 auth_manager = AuthManager()
-
-# Inicializar rate limiter para protección contra brute force
-limiter = Limiter(
-    app=app,
-    key_func=get_remote_address,
-    default_limits=["200 per day", "50 per hour"],
-    storage_uri="memory://"
-)
 
 # Inicializar LLM para el chat
 chat_llm = ChatOpenAI(
@@ -166,22 +142,19 @@ def register():
 
 
 @app.route('/api/login', methods=['POST'])
-@limiter.limit("5 per minute")
 def login():
-    """Autenticar usuario y generar token con protección contra brute force."""
+    """Autenticar usuario y generar token."""
     try:
         data = request.get_json()
         
         if not all(k in data for k in ['username', 'password']):
-            return jsonify({'error': 'Usuario/Email y contraseña requeridos'}), 400
+            return jsonify({'error': 'Usuario y contraseña requeridos'}), 400
         
-        login_input = data['username'].strip()  # Puede ser username o email
+        username = data['username'].strip()
         password = data['password']
         
-        # Buscar usuario por username O email
-        usuario = Usuario.query.filter(
-            or_(Usuario.username == login_input, Usuario.email == login_input)
-        ).first()
+        # Buscar usuario
+        usuario = Usuario.query.filter_by(username=username).first()
         
         if not usuario:
             return jsonify({'error': 'Credenciales inválidas'}), 401
@@ -200,34 +173,14 @@ def login():
         # Generar token
         token = auth_manager.generate_token(str(usuario.id), usuario.username)
         
-        # Crear respuesta con cookie HttpOnly (protección XSS)
-        response = jsonify({
+        return jsonify({
             'message': 'Login exitoso',
+            'token': token,
             'user': usuario.to_dict()
-        })
-        
-        # Establecer token en cookie HttpOnly
-        response.set_cookie(
-            'auth_token',
-            token,
-            httponly=True,  # No accesible desde JavaScript (protección XSS)
-            secure=is_production,  # Solo HTTPS en producción
-            samesite='Lax',  # Protección CSRF
-            max_age=24*60*60  # 24 horas
-        )
-        
-        return response, 200
+        }), 200
         
     except Exception as e:
         return jsonify({'error': f'Error al iniciar sesión: {str(e)}'}), 500
-
-
-@app.route('/api/logout', methods=['POST'])
-def logout():
-    """Cerrar sesión y limpiar cookie de autenticación."""
-    response = jsonify({'message': 'Sesión cerrada exitosamente'})
-    response.set_cookie('auth_token', '', expires=0, httponly=True, secure=is_production, samesite='Lax')
-    return response, 200
 
 
 @app.route('/api/verify-token', methods=['GET'])
@@ -316,17 +269,15 @@ def evaluate():
         if not file.filename.endswith('.pdf'):
             return jsonify({'error': 'El archivo debe ser un PDF'}), 400
         
-        # Generar nombre único con UUID para evitar colisiones
-        original_filename = secure_filename(file.filename)
-        extension = os.path.splitext(original_filename)[1]  # Obtener extensión (.pdf)
-        unique_filename = f"{uuid.uuid4()}{extension}"
-        
         # Guardar el archivo temporalmente para procesar
-        filepath = app.config['UPLOAD_FOLDER'] / unique_filename
+        filename = secure_filename(file.filename)
+        filepath = app.config['UPLOAD_FOLDER'] / filename
         file.save(filepath)
         
         # 💾 GUARDAR COPIA PERMANENTE para el visor del juez
-        permanent_pdf_path = app.config['PERMANENT_PDF_FOLDER'] / unique_filename
+        permanent_pdf_dir = Path(__file__).parent.parent / 'pdfs_procesado'
+        permanent_pdf_dir.mkdir(exist_ok=True)  # Crear carpeta si no existe
+        permanent_pdf_path = permanent_pdf_dir / filename
         
         try:
             # Copiar a ubicación permanente
@@ -341,40 +292,8 @@ def evaluate():
                     'error': 'No se pudo extraer suficiente texto del PDF'
                 }), 400
             
-            # 🚀 HASH CACHE: Verificar si este texto ya fue evaluado
-            texto_hash = hashlib.sha256(texto.encode('utf-8')).hexdigest()
-            ensayo_existente = Ensayo.query.filter_by(texto_hash=texto_hash).first()
-            
-            if ensayo_existente:
-                print(f"⚡ CACHE HIT: Ensayo duplicado encontrado (ID: {ensayo_existente.id})")
-                print(f"   Hash: {texto_hash[:16]}...")
-                print(f"   Archivo original: {ensayo_existente.nombre_archivo_original}")
-                
-                # Retornar evaluación existente sin llamar a OpenAI
-                resultado = {
-                    'id': ensayo_existente.id,
-                    'texto_ensayo': ensayo_existente.texto_completo[:500] + '...' if len(ensayo_existente.texto_completo) > 500 else ensayo_existente.texto_completo,
-                    'texto_completo': ensayo_existente.texto_completo,
-                    'puntuacion_total': ensayo_existente.puntuacion_total,
-                    'calidad_tecnica': ensayo_existente.calidad_tecnica,
-                    'creatividad': ensayo_existente.creatividad,
-                    'vinculacion_tematica': ensayo_existente.vinculacion_tematica,
-                    'bienestar_colectivo': ensayo_existente.bienestar_colectivo,
-                    'uso_responsable_ia': ensayo_existente.uso_responsable_ia,
-                    'potencial_impacto': ensayo_existente.potencial_impacto,
-                    'comentario_general': ensayo_existente.comentario_general,
-                    'tiene_anexo': ensayo_existente.tiene_anexo,
-                    'cache_hit': True,  # Indicador para el frontend
-                    'mensaje_cache': f'✨ Evaluación recuperada del caché (archivo original: {ensayo_existente.nombre_archivo_original})'
-                }
-                return jsonify(resultado)
-            
-            print(f"🔄 CACHE MISS: Evaluando nuevo ensayo con OpenAI")
-            print(f"   Hash: {texto_hash[:16]}...")
-            
             # Verificar si tiene anexo de IA en el diccionario de matches seguros
-            # Usar el nombre original del archivo para buscar el anexo
-            nombre_base = original_filename.replace('.pdf', '').replace('.txt', '')
+            nombre_base = filename.replace('.pdf', '').replace('.txt', '')
             nombre_anexo = obtener_anexo_ia(nombre_base)
             tiene_anexo_verificado = tiene_anexo_ia(nombre_base)
             
@@ -384,26 +303,18 @@ def evaluate():
             nombre_autor_anexo = None
             
             if nombre_anexo:
-                # Construir ruta al anexo usando configuración
-                ruta_anexo = app.config['PERMANENT_ANEXO_FOLDER'] / nombre_anexo
+                # Construir ruta al anexo
+                ruta_anexo = Path(__file__).parent.parent / 'Anexo_procesado' / nombre_anexo
                 
                 # Intentar cargar el anexo
                 if ruta_anexo.exists():
                     try:
-                        # Verificar si es PDF o TXT
-                        if nombre_anexo.lower().endswith('.pdf'):
-                            # Procesar PDF usando el extractor
-                            from pdf_processor import extraer_texto_pdf
-                            texto_anexo = extraer_texto_pdf(str(ruta_anexo))
-                            print(f"✅ Anexo de IA PDF cargado: {nombre_anexo}")
-                        else:
-                            # Archivo de texto plano
-                            with open(ruta_anexo, 'r', encoding='utf-8') as f:
-                                texto_anexo = f.read()
-                            print(f"✅ Anexo de IA TXT cargado: {nombre_anexo}")
+                        with open(ruta_anexo, 'r', encoding='utf-8') as f:
+                            texto_anexo = f.read()
+                        print(f"✅ Anexo de IA cargado: {nombre_anexo}")
                         
                         # Extraer autor del anexo
-                        nombre_autor_anexo = nombre_anexo.replace('AnexoIA_', '').replace('.txt', '').replace('.pdf', '').replace('_', ' ')
+                        nombre_autor_anexo = nombre_anexo.replace('AnexoIA_', '').replace('.txt', '').replace('_', ' ')
                     except Exception as e:
                         print(f"⚠️ Error al cargar anexo: {str(e)}")
                         texto_anexo = None
@@ -483,8 +394,7 @@ def evaluate():
             
             # Guardar en la base de datos
             ensayo = Ensayo(
-                nombre_archivo=unique_filename,
-                nombre_archivo_original=original_filename,
+                nombre_archivo=filename,
                 texto_completo=texto,
                 puntuacion_total=evaluacion.puntuacion_total,
                 calidad_tecnica=calidad_tecnica,
@@ -744,7 +654,7 @@ def export_essays_csv():
             writer.writerow([
                 i,  # Ranking
                 f"{ensayo.puntuacion_total:.2f}",
-                ensayo.nombre_archivo_original or ensayo.nombre_archivo,
+                ensayo.nombre_archivo,
                 getattr(ensayo, 'autor', 'N/A'),
                 f"{ensayo.calidad_tecnica.get('calificacion', 'N/A')}/5",
                 f"{ensayo.creatividad.get('calificacion', 'N/A')}/5",
@@ -776,175 +686,6 @@ def export_essays_csv():
         return jsonify({'error': str(e)}), 500
 
 
-@app.route('/essays/export/excel', methods=['GET'])
-@require_auth
-def export_essays_excel():
-    """Exportar ensayos a Excel profesional con formato mejorado."""
-    try:
-        # Importar openpyxl
-        try:
-            from openpyxl import Workbook
-            from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
-            from openpyxl.utils import get_column_letter
-        except ImportError:
-            return jsonify({'error': 'openpyxl no está instalado. Usa la exportación CSV.'}), 500
-        
-        # Obtener todos los ensayos ordenados por puntuación
-        ensayos = Ensayo.query.order_by(Ensayo.puntuacion_total.desc()).all()
-        
-        if not ensayos:
-            return jsonify({'error': 'No hay ensayos para exportar'}), 404
-        
-        # Crear workbook
-        wb = Workbook()
-        ws = wb.active
-        ws.title = "Evaluaciones"
-        
-        # Colores corporativos
-        header_fill = PatternFill(start_color="1F4E78", end_color="1F4E78", fill_type="solid")
-        alt_row_fill = PatternFill(start_color="E7E6E6", end_color="E7E6E6", fill_type="solid")
-        
-        # Colores para puntuaciones
-        excellent_fill = PatternFill(start_color="C6EFCE", end_color="C6EFCE", fill_type="solid")
-        good_fill = PatternFill(start_color="FFEB9C", end_color="FFEB9C", fill_type="solid")
-        poor_fill = PatternFill(start_color="FFC7CE", end_color="FFC7CE", fill_type="solid")
-        
-        # Bordes
-        thin_border = Border(
-            left=Side(style='thin', color='CCCCCC'),
-            right=Side(style='thin', color='CCCCCC'),
-            top=Side(style='thin', color='CCCCCC'),
-            bottom=Side(style='thin', color='CCCCCC')
-        )
-        
-        # Encabezados
-        headers = [
-            'Ranking',
-            'Puntuación Total',
-            'Nombre de Archivo',
-            'Autor',
-            'Calidad Técnica',
-            'Creatividad',
-            'Vinculación Temática',
-            'Bienestar Colectivo',
-            'Uso Responsable IA',
-            'Potencial Impacto',
-            'Tiene Anexo',
-            'Fecha Evaluación',
-            'Longitud (palabras)',
-            'Comentario General'
-        ]
-        
-        # Escribir encabezados
-        for col_idx, header in enumerate(headers, 1):
-            cell = ws.cell(row=1, column=col_idx, value=header)
-            cell.font = Font(bold=True, color="FFFFFF", size=11, name='Calibri')
-            cell.fill = header_fill
-            cell.alignment = Alignment(horizontal='center', vertical='center', wrap_text=True)
-            cell.border = thin_border
-        
-        # Escribir datos
-        for i, ensayo in enumerate(ensayos, 2):
-            ranking = i - 1
-            
-            # Datos de la fila
-            row_data = [
-                ranking,
-                ensayo.puntuacion_total,
-                ensayo.nombre_archivo,
-                getattr(ensayo, 'autor', 'N/A'),
-                f"{ensayo.calidad_tecnica.get('calificacion', 'N/A')}/5",
-                f"{ensayo.creatividad.get('calificacion', 'N/A')}/5",
-                f"{ensayo.vinculacion_tematica.get('calificacion', 'N/A')}/5",
-                f"{ensayo.bienestar_colectivo.get('calificacion', 'N/A')}/5",
-                f"{ensayo.uso_responsable_ia.get('calificacion', 'N/A')}/5",
-                f"{ensayo.potencial_impacto.get('calificacion', 'N/A')}/5",
-                'Sí' if ensayo.tiene_anexo else 'No',
-                ensayo.fecha_evaluacion.strftime('%Y-%m-%d %H:%M:%S'),
-                getattr(ensayo, 'num_palabras', len(ensayo.texto_completo.split()) if ensayo.texto_completo else 0),
-                ensayo.comentario_general
-            ]
-            
-            # Escribir datos
-            for col_idx, value in enumerate(row_data, 1):
-                cell = ws.cell(row=i, column=col_idx, value=value)
-                cell.border = thin_border
-                cell.font = Font(name='Calibri', size=10)
-                
-                # Alternar color de fila
-                if i % 2 == 0:
-                    cell.fill = alt_row_fill
-                
-                # Alineación
-                if col_idx in [1, 2, 5, 6, 7, 8, 9, 10, 11, 13]:  # Numéricos y anexo
-                    cell.alignment = Alignment(horizontal='center', vertical='center')
-                elif col_idx in [3, 4, 14]:  # Texto largo
-                    cell.alignment = Alignment(horizontal='left', vertical='center', wrap_text=True)
-                else:
-                    cell.alignment = Alignment(horizontal='center', vertical='center')
-                
-                # Formato especial para puntuación total
-                if col_idx == 2:
-                    puntuacion = ensayo.puntuacion_total
-                    if puntuacion >= 4.5:
-                        cell.fill = excellent_fill
-                        cell.font = Font(bold=True, color="006100", size=11, name='Calibri')
-                    elif puntuacion >= 3.5:
-                        cell.fill = good_fill
-                        cell.font = Font(bold=True, color="9C6500", size=11, name='Calibri')
-                    else:
-                        cell.fill = poor_fill
-                        cell.font = Font(bold=True, color="9C0006", size=11, name='Calibri')
-                
-                # Formato para ranking
-                if col_idx == 1:
-                    cell.font = Font(bold=True, size=11, name='Calibri')
-                
-                # Formato para "Tiene Anexo"
-                if col_idx == 11:
-                    if value == 'Sí':
-                        cell.font = Font(color="006100", bold=True, name='Calibri')
-                    elif value == 'No':
-                        cell.font = Font(color="9C0006", name='Calibri')
-        
-        # Ajustar anchos de columna
-        column_widths = {
-            'A': 10, 'B': 15, 'C': 50, 'D': 30, 'E': 15, 'F': 15, 'G': 18,
-            'H': 18, 'I': 18, 'J': 15, 'K': 12, 'L': 18, 'M': 15, 'N': 60
-        }
-        for col, width in column_widths.items():
-            ws.column_dimensions[col].width = width
-        
-        # Ajustar altura de filas
-        ws.row_dimensions[1].height = 40
-        for row_idx in range(2, ws.max_row + 1):
-            ws.row_dimensions[row_idx].height = 50
-        
-        # Filtros automáticos
-        ws.auto_filter.ref = f"A1:{get_column_letter(ws.max_column)}{ws.max_row}"
-        
-        # Congelar primera fila y primera columna
-        ws.freeze_panes = "B2"
-        
-        # Guardar en memoria
-        output = io.BytesIO()
-        wb.save(output)
-        output.seek(0)
-        
-        return send_file(
-            output,
-            mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-            as_attachment=True,
-            download_name=f'ensayos_evaluados_{ensayos[0].fecha_evaluacion.strftime("%Y%m%d")}_profesional.xlsx'
-        )
-        
-    except Exception as e:
-        print(f"Error al exportar ensayos a Excel: {str(e)}")
-        import traceback
-        traceback.print_exc()
-        return jsonify({'error': str(e)}), 500
-
-
 @app.route('/essays/<int:essay_id>', methods=['GET'])
 @require_auth
 def get_essay(essay_id):
@@ -964,11 +705,22 @@ def get_essay_pdf(essay_id):
     try:
         ensayo = Ensayo.query.get_or_404(essay_id)
         
-        # Construir la ruta al PDF usando configuración
-        pdf_path = app.config['PERMANENT_PDF_FOLDER'] / ensayo.nombre_archivo
+        # Construir la ruta al PDF original
+        # Los PDFs están en /pdfs_procesado/
+        pdf_dir = Path(__file__).parent.parent / 'pdfs_procesado'
+        
+        # El nombre del archivo es el nombre_archivo del ensayo
+        # Quitar el .txt y agregar .pdf
+        pdf_filename = ensayo.nombre_archivo.replace('_procesado.txt', '.pdf')
+        pdf_path = pdf_dir / pdf_filename
         
         if not pdf_path.exists():
-            return jsonify({'error': 'PDF no encontrado'}), 404
+            # Intentar sin el sufijo _procesado
+            pdf_filename_alt = ensayo.nombre_archivo.replace('.txt', '.pdf')
+            pdf_path = pdf_dir / pdf_filename_alt
+            
+            if not pdf_path.exists():
+                return jsonify({'error': 'PDF no encontrado'}), 404
         
         return send_file(
             pdf_path,
@@ -1329,155 +1081,6 @@ def guardar_evaluacion_manual(ensayo_id):
     except Exception as e:
         db.session.rollback()
         print(f"Error al guardar evaluación manual: {str(e)}")
-        return jsonify({'error': str(e)}), 500
-
-
-@app.route('/api/evaluaciones-jurado', methods=['POST'])
-@require_auth
-def guardar_evaluacion_jurado():
-    """Guardar o actualizar evaluación de jurado usando los 6 criterios del Grading Cockpit."""
-    try:
-        data = request.json
-        
-        # Validar datos requeridos
-        ensayo_id = data.get('ensayo_id')
-        if not ensayo_id:
-            return jsonify({'error': 'ensayo_id es requerido'}), 400
-        
-        # Verificar que el ensayo existe
-        ensayo = Ensayo.query.get(ensayo_id)
-        if not ensayo:
-            return jsonify({'error': 'Ensayo no encontrado'}), 404
-        
-        # Obtener ID del jurado actual desde el token
-        jurado_id = request.current_user.get('user_id')
-        
-        # Extraer puntajes y comentarios de los 6 criterios
-        puntajes = data.get('puntajes', {})
-        comentarios = data.get('comentarios', {})
-        
-        # Validar que todos los criterios tienen puntaje
-        criterios_requeridos = ['tecnica', 'creatividad', 'vinculacion', 'bienestar', 'uso_ia', 'impacto']
-        for criterio in criterios_requeridos:
-            if criterio not in puntajes or puntajes[criterio] is None:
-                return jsonify({'error': f'Falta puntaje para criterio: {criterio}'}), 400
-            if not (1 <= puntajes[criterio] <= 5):
-                return jsonify({'error': f'Puntaje inválido para {criterio}: debe estar entre 1 y 5'}), 400
-        
-        # Buscar evaluación existente (un jurado solo evalúa un ensayo una vez)
-        evaluacion = EvaluacionJurado.query.filter_by(
-            ensayo_id=ensayo_id,
-            jurado_id=jurado_id
-        ).first()
-        
-        if evaluacion:
-            # Actualizar evaluación existente
-            evaluacion.calificacion_tecnica = puntajes['tecnica']
-            evaluacion.calificacion_creatividad = puntajes['creatividad']
-            evaluacion.calificacion_vinculacion = puntajes['vinculacion']
-            evaluacion.calificacion_bienestar = puntajes['bienestar']
-            evaluacion.calificacion_uso_ia = puntajes['uso_ia']
-            evaluacion.calificacion_impacto = puntajes['impacto']
-            
-            evaluacion.comentario_tecnica = comentarios.get('tecnica', '')
-            evaluacion.comentario_creatividad = comentarios.get('creatividad', '')
-            evaluacion.comentario_vinculacion = comentarios.get('vinculacion', '')
-            evaluacion.comentario_bienestar = comentarios.get('bienestar', '')
-            evaluacion.comentario_uso_ia = comentarios.get('uso_ia', '')
-            evaluacion.comentario_impacto = comentarios.get('impacto', '')
-            
-            evaluacion.comentario_general = data.get('comentario_general', '')
-            evaluacion.puntuacion_total = data.get('puntuacion_total', 0)
-            evaluacion.estado = data.get('estado', 'completada')
-            evaluacion.fecha_modificacion = datetime.utcnow()
-            
-            if evaluacion.estado == 'completada':
-                evaluacion.fecha_completada = datetime.utcnow()
-        else:
-            # Crear nueva evaluación
-            evaluacion = EvaluacionJurado(
-                ensayo_id=ensayo_id,
-                jurado_id=jurado_id,
-                calificacion_tecnica=puntajes['tecnica'],
-                calificacion_creatividad=puntajes['creatividad'],
-                calificacion_vinculacion=puntajes['vinculacion'],
-                calificacion_bienestar=puntajes['bienestar'],
-                calificacion_uso_ia=puntajes['uso_ia'],
-                calificacion_impacto=puntajes['impacto'],
-                comentario_tecnica=comentarios.get('tecnica', ''),
-                comentario_creatividad=comentarios.get('creatividad', ''),
-                comentario_vinculacion=comentarios.get('vinculacion', ''),
-                comentario_bienestar=comentarios.get('bienestar', ''),
-                comentario_uso_ia=comentarios.get('uso_ia', ''),
-                comentario_impacto=comentarios.get('impacto', ''),
-                comentario_general=data.get('comentario_general', ''),
-                puntuacion_total=data.get('puntuacion_total', 0),
-                estado=data.get('estado', 'completada'),
-                fecha_completada=datetime.utcnow() if data.get('estado') == 'completada' else None
-            )
-            db.session.add(evaluacion)
-        
-        db.session.commit()
-        
-        return jsonify({
-            'success': True,
-            'message': 'Evaluación guardada exitosamente',
-            'evaluacion_id': evaluacion.id,
-            'ensayo_id': ensayo_id,
-            'estado': evaluacion.estado
-        }), 200
-        
-    except Exception as e:
-        db.session.rollback()
-        print(f"Error al guardar evaluación de jurado: {str(e)}")
-        import traceback
-        traceback.print_exc()
-        return jsonify({'error': str(e)}), 500
-
-
-@app.route('/api/evaluaciones-jurado/<int:ensayo_id>', methods=['GET'])
-@require_auth
-def obtener_evaluacion_jurado(ensayo_id):
-    """Obtener la evaluación del jurado actual para un ensayo específico."""
-    try:
-        jurado_id = request.current_user.get('user_id')
-        
-        evaluacion = EvaluacionJurado.query.filter_by(
-            ensayo_id=ensayo_id,
-            jurado_id=jurado_id
-        ).first()
-        
-        if not evaluacion:
-            return jsonify({'evaluacion': None}), 200
-        
-        return jsonify({
-            'evaluacion': {
-                'id': evaluacion.id,
-                'puntajes': {
-                    'tecnica': evaluacion.calificacion_tecnica,
-                    'creatividad': evaluacion.calificacion_creatividad,
-                    'vinculacion': evaluacion.calificacion_vinculacion,
-                    'bienestar': evaluacion.calificacion_bienestar,
-                    'uso_ia': evaluacion.calificacion_uso_ia,
-                    'impacto': evaluacion.calificacion_impacto
-                },
-                'comentarios': {
-                    'tecnica': evaluacion.comentario_tecnica,
-                    'creatividad': evaluacion.comentario_creatividad,
-                    'vinculacion': evaluacion.comentario_vinculacion,
-                    'bienestar': evaluacion.comentario_bienestar,
-                    'uso_ia': evaluacion.comentario_uso_ia,
-                    'impacto': evaluacion.comentario_impacto
-                },
-                'comentario_general': evaluacion.comentario_general,
-                'puntuacion_total': evaluacion.puntuacion_total,
-                'estado': evaluacion.estado,
-                'fecha_modificacion': evaluacion.fecha_modificacion.isoformat() if evaluacion.fecha_modificacion else None
-            }
-        }), 200
-        
-    except Exception as e:
-        print(f"Error al obtener evaluación de jurado: {str(e)}")
         return jsonify({'error': str(e)}), 500
 
 

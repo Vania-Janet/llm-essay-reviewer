@@ -30,9 +30,7 @@ const editTotalScore = document.getElementById('editTotalScore');
 const saveScoreBtn = document.getElementById('saveScoreBtn');
 
 // Judge evaluation elements
-const navTabIA = document.getElementById('navTabIA');
-const navTabManual = document.getElementById('navTabManual');
-const judgeEvaluationBtn = document.getElementById('judgeEvaluationBtn'); // Mantener para compatibilidad
+const judgeEvaluationBtn = document.getElementById('judgeEvaluationBtn');
 const judgeEvaluationSection = document.getElementById('judgeEvaluationSection');
 const backFromJudgeBtn = document.getElementById('backFromJudgeBtn');
 const essaySelectForEval = document.getElementById('essaySelectForEval');
@@ -67,40 +65,46 @@ let isEditMode = false;
 let selectedEssays = new Set();
 
 // ============= AUTENTICACIÓN =============
-// Nota: El token ahora se almacena en cookies HttpOnly (más seguro)
-// Solo mantenemos el usuario en localStorage para estado de UI
+const AUTH_TOKEN_KEY = 'auth_token';
 const USER_KEY = 'user';
+
+function getAuthToken() {
+    return localStorage.getItem(AUTH_TOKEN_KEY);
+}
 
 function getUser() {
     const userStr = localStorage.getItem(USER_KEY);
     return userStr ? JSON.parse(userStr) : null;
 }
 
-function setUser(user) {
-    localStorage.setItem(USER_KEY, JSON.stringify(user));
+function setAuthToken(token) {
+    localStorage.setItem(AUTH_TOKEN_KEY, token);
 }
 
 function clearAuth() {
+    localStorage.removeItem(AUTH_TOKEN_KEY);
     localStorage.removeItem(USER_KEY);
-    // El token se limpiará automáticamente al expirar la cookie
 }
 
 function logout() {
     clearAuth();
-    // Llamar al endpoint de logout para limpiar la cookie
-    fetch('/api/logout', {
-        method: 'POST',
-        credentials: 'same-origin'
-    }).finally(() => {
-        window.location.href = '/login.html';
-    });
+    window.location.href = '/login.html';
 }
 
 // Verificar autenticación al cargar la página
 async function checkAuth() {
+    const token = getAuthToken();
+    
+    if (!token) {
+        window.location.href = '/login.html';
+        return false;
+    }
+    
     try {
         const response = await fetch('/api/verify-token', {
-            credentials: 'same-origin'  // Incluir cookies automáticamente
+            headers: {
+                'Authorization': `Bearer ${token}`
+            }
         });
         
         if (!response.ok) {
@@ -120,10 +124,21 @@ async function checkAuth() {
 
 // Función helper para hacer requests autenticados
 async function authenticatedFetch(url, options = {}) {
-    // No necesitamos agregar token manualmente, las cookies se envían automáticamente
+    const token = getAuthToken();
+    
+    if (!token) {
+        window.location.href = '/login.html';
+        throw new Error('No autenticado');
+    }
+    
+    const headers = {
+        ...options.headers,
+        'Authorization': `Bearer ${token}`
+    };
+    
     const response = await fetch(url, {
         ...options,
-        credentials: 'same-origin'  // Asegurar que se incluyan las cookies
+        headers
     });
     
     if (response.status === 401) {
@@ -243,10 +258,6 @@ if (backFromResultsBtn) backFromResultsBtn.addEventListener('click', returnToLib
 if (backFromHistoryBtn) backFromHistoryBtn.addEventListener('click', returnToLibrary);
 if (backFromComparisonBtn) backFromComparisonBtn.addEventListener('click', returnToLibrary);
 
-// Navigation tabs event listeners
-if (navTabIA) navTabIA.addEventListener('click', () => switchToTab('library'));
-if (navTabManual) navTabManual.addEventListener('click', () => switchToTab('judge'));
-
 // Judge evaluation event listeners
 if (judgeEvaluationBtn) judgeEvaluationBtn.addEventListener('click', showJudgeEvaluation);
 if (backFromJudgeBtn) backFromJudgeBtn.addEventListener('click', returnToLibrary);
@@ -365,12 +376,6 @@ async function evaluateEssay() {
 
         const result = await response.json();
         
-        // 🚀 Verificar si fue un cache hit
-        if (result.cache_hit) {
-            showNotification(result.mensaje_cache || '⚡ Evaluación recuperada del caché (sin consumo de API)', 'success');
-            console.log('⚡ CACHE HIT - Evaluación recuperada instantáneamente');
-        }
-        
         // Guardar evaluación y texto para el chat
         currentEvaluation = result;
         currentEssayText = result.texto_completo || '';
@@ -397,11 +402,9 @@ function displayResults(evaluation) {
     const essayTitle = document.getElementById('essayTitle');
     const essayMetadata = document.getElementById('essayMetadata');
     
-    if (evaluation.nombre_archivo_original || evaluation.nombre_archivo) {
-        // Usar el nombre original si está disponible
-        const nombreDisplay = evaluation.nombre_archivo_original || evaluation.nombre_archivo;
+    if (evaluation.nombre_archivo) {
         // Extraer el nombre del archivo sin la extensión
-        let displayName = nombreDisplay.replace('_procesado.txt', '').replace('.txt', '').replace('.pdf', '');
+        let displayName = evaluation.nombre_archivo.replace('_procesado.txt', '').replace('.txt', '');
         // Reemplazar guiones bajos por espacios y capitalizar
         displayName = displayName.split('_').map(word => 
             word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()
@@ -903,17 +906,12 @@ function downloadReport() {
     
     yPos = 50;
     
-    // Nombre del archivo con wrap para evitar recorte
+    // Nombre del archivo
     doc.setTextColor(0, 0, 0);
-    doc.setFontSize(12);
+    doc.setFontSize(14);
     doc.setFont('helvetica', 'bold');
-    const essayTitleText = `Ensayo: ${currentFileName || 'Sin nombre'}`;
-    const titleLines = doc.splitTextToSize(cleanTextForPDF(essayTitleText), maxWidth);
-    titleLines.forEach((line) => {
-        doc.text(line, margin, yPos);
-        yPos += 6;
-    });
-    yPos += 4;
+    doc.text(`Ensayo: ${currentFileName || 'Sin nombre'}`, margin, yPos);
+    yPos += 10;
     
     // Puntuación total con fondo
     checkPageBreak(30);
@@ -1021,14 +1019,11 @@ function downloadReport() {
 // Funciones para historial y comparación
 async function showEssaysHistory() {
     essaysHistorySection.style.display = 'block';
-    essaysLibrarySection.style.display = 'none';
     uploadSection.style.display = 'none';
     resultsSection.style.display = 'none';
     comparisonSection.style.display = 'none';
-    judgeEvaluationSection.style.display = 'none';
     
-    // 🎨 SKELETON SCREEN en lugar de loader
-    showSkeletonLoading(essaysList, 5);
+    essaysList.innerHTML = '<div class="loader"></div><p>Cargando ensayos...</p>';
     selectedEssays.clear();
     compareSelectedBtn.disabled = true;
     
@@ -1047,7 +1042,7 @@ async function showEssaysHistory() {
             <div class="essay-item" data-id="${essay.id}">
                 <input type="checkbox" class="essay-checkbox" data-id="${essay.id}">
                 <div class="essay-info">
-                    <div class="essay-name">${escapeHtml(essay.nombre_archivo_original || essay.nombre_archivo)}</div>
+                    <div class="essay-name">${escapeHtml(essay.nombre_archivo)}</div>
                     <div class="essay-meta">
                         <span>📅 ${new Date(essay.fecha_evaluacion).toLocaleString('es-MX')}</span>
                         <span>📄 ${escapeHtml(essay.texto_preview || '')}</span>
@@ -1070,9 +1065,7 @@ async function showEssaysHistory() {
 
 function hideEssaysHistory() {
     essaysHistorySection.style.display = 'none';
-    essaysLibrarySection.style.display = 'block';
-    uploadSection.style.display = 'none';
-    resultsSection.style.display = 'none';
+    uploadSection.style.display = 'block';
 }
 
 function handleEssaySelection(e) {
@@ -1096,10 +1089,7 @@ async function compareEssays() {
         return;
     }
     
-    // Ocultar la biblioteca y mostrar la sección de comparación
-    essaysLibrarySection.style.display = 'none';
-    uploadSection.style.display = 'none';
-    resultsSection.style.display = 'none';
+    essaysHistorySection.style.display = 'none';
     comparisonSection.style.display = 'block';
     comparisonContent.innerHTML = '<div class="loader"></div><p>Generando análisis comparativo...</p>';
     
@@ -1127,61 +1117,24 @@ async function compareEssays() {
             .map((essay, index) => `
             <div class="essay-comparison-card" style="border-left: 4px solid ${index === 0 ? '#ddd436' : index === 1 ? '#29346d' : '#d65a31'}">
                 <div style="display: flex; justify-content: space-between; align-items: center;">
-                    <h4>${index + 1}. ${(essay.nombre_archivo_original || essay.nombre_archivo).replace('.txt', '').replace('.pdf', '').replace('Ensayo_', '').substring(0, 40)}...</h4>
+                    <h4>${index + 1}. ${essay.nombre_archivo.replace('.txt', '').replace('Ensayo_', '').substring(0, 40)}...</h4>
                     <div class="comparison-score" style="font-size: 1.5rem; padding: 0.5rem 1rem;">${essay.puntuacion_total.toFixed(2)}</div>
                 </div>
                 <p style="margin: 0.5rem 0; color: #6b7280;">📎 ${essay.tiene_anexo ? 'Con Anexo IA' : 'Sin Anexo IA'}</p>
             </div>
         `).join('');
         
-        // Convertir markdown a HTML mejorado con mejor formato
-        let comparisonHTML = result.comparacion;
-        
-        // Normalizar saltos de línea múltiples
-        comparisonHTML = comparisonHTML.replace(/\n{3,}/g, '\n\n');
-        
-        // Convertir líneas de ranking (Ensayo N: "Título" - X.XX/5.0)
-        comparisonHTML = comparisonHTML.replace(/^(Ensayo \d+): "(.*?)" - (\d+\.\d+)\/5\.0$/gm, 
-            '<div class="ranking-item"><span class="ranking-number">$1</span><span class="ranking-title">"$2"</span><span class="ranking-score">$3/5.0</span></div>');
-        
-        // Convertir encabezados
-        comparisonHTML = comparisonHTML.replace(/^#### (.+)$/gm, '<h4>$1</h4>');
-        comparisonHTML = comparisonHTML.replace(/^### (.+)$/gm, '<h3>$1</h3>');
-        comparisonHTML = comparisonHTML.replace(/^## (.+)$/gm, '<h2>$1</h2>');
-        comparisonHTML = comparisonHTML.replace(/^# (.+)$/gm, '<h2>$1</h2>');
-        
-        // Convertir negritas
-        comparisonHTML = comparisonHTML.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
-        
-        // Convertir listas numeradas - mejorado
-        comparisonHTML = comparisonHTML.replace(/^(\d+\.\s+.+$(?:\n(?!\d+\.|\n|^[#-]).*$)*)/gm, (match) => {
-            const items = match.split(/\n(?=\d+\.\s)/);
-            const listItems = items.map(item => {
-                const content = item.replace(/^\d+\.\s+/, '');
-                return `<li>${content}</li>`;
-            }).join('');
-            return `<ol>${listItems}</ol>`;
-        });
-        
-        // Convertir listas con viñetas - mejorado
-        comparisonHTML = comparisonHTML.replace(/^(-\s+.+$(?:\n(?!-\s|\n|^[#]).*$)*)/gm, (match) => {
-            const items = match.split(/\n(?=-\s)/);
-            const listItems = items.map(item => {
-                const content = item.replace(/^-\s+/, '');
-                return `<li>${content}</li>`;
-            }).join('');
-            return `<ul>${listItems}</ul>`;
-        });
-        
-        // Convertir párrafos (doble salto de línea)
-        comparisonHTML = comparisonHTML.split(/\n\n+/).map(para => {
-            para = para.trim();
-            if (!para) return '';
-            if (para.startsWith('<h') || para.startsWith('<ul') || para.startsWith('<ol')) {
-                return para;
-            }
-            return `<p>${para.replace(/\n/g, ' ')}</p>`;
-        }).join('\n');
+        // Convertir markdown a HTML mejorado
+        const comparisonHTML = result.comparacion
+            .replace(/^### (.+)$/gm, '<h4>$1</h4>')
+            .replace(/^## (.+)$/gm, '<h3>$1</h3>')
+            .replace(/^# (.+)$/gm, '<h2>$1</h2>')
+            .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+            .replace(/^\d+\.\s+(.+)/gm, '<li>$1</li>')
+            .replace(/^-\s+(.+)/gm, '<li>$1</li>')
+            .replace(/(<li>.*?<\/li>\s*)+/gs, '<ul>$&</ul>')
+            .replace(/\n\n/g, '</p><p>')
+            .replace(/\n/g, '<br>');
         
         comparisonContent.innerHTML = `
             <div class="essays-summary">
@@ -1204,16 +1157,30 @@ async function compareEssays() {
 
 function hideComparison() {
     comparisonSection.style.display = 'none';
-    essaysLibrarySection.style.display = 'block';
-    uploadSection.style.display = 'none';
-    resultsSection.style.display = 'none';
+    essaysHistorySection.style.display = 'block';
 }
 
 // Funciones para la biblioteca de ensayos
 async function loadEssaysLibrary() {
     try {
-        // 🎨 SKELETON LOADING mejorado
-        libraryList.innerHTML = createSkeletonCards(6);
+        // Mostrar skeleton loading
+        libraryList.innerHTML = `
+            <div class="skeleton-card">
+                <div class="skeleton-text" style="width: 60%;"></div>
+                <div class="skeleton-text" style="width: 40%;"></div>
+                <div class="skeleton-text" style="width: 50%;"></div>
+            </div>
+            <div class="skeleton-card">
+                <div class="skeleton-text" style="width: 55%;"></div>
+                <div class="skeleton-text" style="width: 45%;"></div>
+                <div class="skeleton-text" style="width: 35%;"></div>
+            </div>
+            <div class="skeleton-card">
+                <div class="skeleton-text" style="width: 50%;"></div>
+                <div class="skeleton-text" style="width: 60%;"></div>
+                <div class="skeleton-text" style="width: 40%;"></div>
+            </div>
+        `;
         
         const response = await authenticatedFetch('/essays');
         if (!response.ok) throw new Error('Error al cargar ensayos');
@@ -1286,19 +1253,8 @@ function displayEssaysLibrary(essays) {
             ? '<span class="anexo-indicator anexo-ok">✓ Anexo IA</span>'
             : '<span class="anexo-indicator anexo-missing">⚠️ Sin Anexo IA</span>';
         
-        const nombreParaDisplay = essay.nombre_archivo_original || essay.nombre_archivo;
-        const title = escapeHtml(extractTitle(nombreParaDisplay));
-        const author = escapeHtml(extractAuthor(nombreParaDisplay));
-        
-        // Determinar clase de color según puntuación
-        let scoreClass = 'score-low';
-        if (essay.puntuacion_total >= 4.5) {
-            scoreClass = 'score-excellent';
-        } else if (essay.puntuacion_total >= 4.0) {
-            scoreClass = 'score-good';
-        } else if (essay.puntuacion_total >= 3.5) {
-            scoreClass = 'score-average';
-        }
+        const title = escapeHtml(extractTitle(essay.nombre_archivo));
+        const author = escapeHtml(extractAuthor(essay.nombre_archivo));
         
         return `
             <div class="essay-card" data-id="${essay.id}">
@@ -1307,7 +1263,7 @@ function displayEssaysLibrary(essays) {
                     <div class="essay-card-title">${title}</div>
                 </div>
                 <div class="essay-card-author">Por: ${author}</div>
-                <div class="essay-card-score ${scoreClass}">${essay.puntuacion_total.toFixed(2)}/5.00</div>
+                <div class="essay-card-score">${essay.puntuacion_total.toFixed(2)}/5.00</div>
                 ${anexoIndicator}
                 <div class="essay-card-meta">
                     <div class="essay-card-date">
@@ -1384,12 +1340,11 @@ async function viewEssayDetails(essayId) {
             id: essay.id,
             ...essay.evaluacion,  // Extraer la evaluación del objeto
             nombre_archivo: essay.nombre_archivo,
-            nombre_archivo_original: essay.nombre_archivo_original,
             fecha_evaluacion: essay.fecha_evaluacion,
             tiene_anexo: essay.tiene_anexo
         };
         currentEssayText = essay.texto_completo;
-        currentFileName = (essay.nombre_archivo_original || essay.nombre_archivo).replace('.pdf', '').replace('.txt', '');
+        currentFileName = essay.nombre_archivo.replace('.pdf', '');
         
         // Seleccionar solo este ensayo
         selectedEssays.clear();
@@ -1436,50 +1391,25 @@ async function loadPDF(essayId) {
         // Construir URL del PDF
         const pdfUrl = `/essays/${essayId}/pdf`;
         
-        // Fetch PDF with authentication - get as blob
-        const response = await authenticatedFetch(pdfUrl);
+        // Verificar que el PDF existe
+        const response = await authenticatedFetch(pdfUrl, { method: 'HEAD' });
         
         if (response.ok) {
-            // Convert response to blob
-            const blob = await response.blob();
-            
-            // Verificar que el blob no esté vacío
-            if (blob.size === 0) {
-                throw new Error('El archivo PDF está vacío');
-            }
-            
-            // Create object URL from blob
-            const objectUrl = URL.createObjectURL(blob);
-            
-            // Clean up previous object URL if exists
-            if (pdfViewer.src && pdfViewer.src.startsWith('blob:')) {
-                URL.revokeObjectURL(pdfViewer.src);
-            }
-            
-            // Load PDF in the iframe using object URL
-            pdfViewer.src = objectUrl;
+            // Cargar PDF en el iframe
+            pdfViewer.src = pdfUrl;
             pdfViewerContainer.style.display = 'block';
-            pdfViewer.style.display = 'block';
             pdfError.style.display = 'none';
-            
-            // Agregar listener para detectar errores de carga del PDF
-            pdfViewer.onerror = () => {
-                console.error('Error al cargar el PDF en el iframe');
-                pdfViewerContainer.style.display = 'block';
-                pdfViewer.style.display = 'none';
-                pdfError.style.display = 'flex';
-                pdfError.innerHTML = '<p>⚠️ Error al cargar el PDF. El archivo puede estar corrupto.</p>';
-            };
         } else {
-            const errorData = await response.json().catch(() => ({}));
-            throw new Error(errorData.error || `Error ${response.status}: No se pudo cargar el PDF`);
+            // Mostrar error
+            pdfViewerContainer.style.display = 'block';
+            pdfViewer.style.display = 'none';
+            pdfError.style.display = 'flex';
         }
     } catch (error) {
         console.error('Error al cargar PDF:', error);
         pdfViewerContainer.style.display = 'block';
         pdfViewer.style.display = 'none';
         pdfError.style.display = 'flex';
-        pdfError.innerHTML = `<p>⚠️ ${error.message || 'No se pudo cargar el PDF'}</p>`;
     }
 }
 
@@ -1521,10 +1451,10 @@ function updateChatbotContext() {
     }
 }
 
-// Función para descargar CSV (compatible con Excel básico)
-async function downloadCSV() {
+// Función para descargar Excel con todos los ensayos
+async function downloadExcel() {
     try {
-        const downloadBtn = document.getElementById('downloadCSVBtn');
+        const downloadBtn = document.getElementById('downloadExcelBtn');
         const originalText = downloadBtn.innerHTML;
         
         // Mostrar estado de descarga
@@ -1569,68 +1499,7 @@ async function downloadCSV() {
         downloadBtn.innerHTML = originalText;
         
         // Mostrar mensaje de éxito
-        showNotification('✅ CSV descargado exitosamente', 'success');
-        
-    } catch (error) {
-        console.error('Error al descargar CSV:', error);
-        
-        const downloadBtn = document.getElementById('downloadCSVBtn');
-        downloadBtn.disabled = false;
-        downloadBtn.innerHTML = '📄 Descargar CSV';
-        
-        showNotification('❌ Error al descargar CSV: ' + error.message, 'error');
-    }
-}
-
-// Función para descargar Excel profesional con formato mejorado
-async function downloadExcel() {
-    try {
-        const downloadBtn = document.getElementById('downloadExcelBtn');
-        const originalText = downloadBtn.innerHTML;
-        
-        // Mostrar estado de descarga
-        downloadBtn.disabled = true;
-        downloadBtn.innerHTML = '⏳ Generando Excel...';
-        
-        const response = await authenticatedFetch('/essays/export/excel');
-        
-        if (!response.ok) {
-            throw new Error('Error al generar el archivo Excel');
-        }
-        
-        // Obtener el blob del archivo
-        const blob = await response.blob();
-        
-        // Crear un enlace temporal para descargar
-        const url = window.URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.style.display = 'none';
-        a.href = url;
-        
-        // Obtener el nombre del archivo desde el header o usar uno por defecto
-        const contentDisposition = response.headers.get('content-disposition');
-        let filename = 'ensayos_evaluados_profesional.xlsx';
-        if (contentDisposition) {
-            const filenameMatch = contentDisposition.match(/filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/);
-            if (filenameMatch && filenameMatch[1]) {
-                filename = filenameMatch[1].replace(/['"]/g, '');
-            }
-        }
-        
-        a.download = filename;
-        document.body.appendChild(a);
-        a.click();
-        
-        // Limpiar
-        window.URL.revokeObjectURL(url);
-        document.body.removeChild(a);
-        
-        // Restaurar botón
-        downloadBtn.disabled = false;
-        downloadBtn.innerHTML = originalText;
-        
-        // Mostrar mensaje de éxito
-        showNotification('✅ Excel profesional descargado exitosamente', 'success');
+        showNotification('✅ Excel descargado exitosamente', 'success');
         
     } catch (error) {
         console.error('Error al descargar Excel:', error);
@@ -1786,8 +1655,8 @@ async function createCriteriaRadarChart() {
         const criteriaAverages = calculateCriteriaAverages();
         
         if (criteriaAverages.labels.length === 0) {
-            // Si no hay datos, mostrar mensaje
-            ctx.parentElement.innerHTML = '<p style="text-align: center; color: #6b7280; padding: 2rem;">No hay datos suficientes para generar el gráfico de criterios. Evalúa al menos un ensayo.</p>';
+            // Si no hay datos de criterios, usar datos de ejemplo
+            createExampleRadarChart(ctx);
             return;
         }
 
@@ -1829,59 +1698,91 @@ async function createCriteriaRadarChart() {
         });
     } catch (error) {
         console.error('Error creando gráfico de radar:', error);
-        ctx.parentElement.innerHTML = '<p style="text-align: center; color: #ef4444; padding: 2rem;">Error al generar el gráfico de criterios.</p>';
+        createExampleRadarChart(ctx);
     }
 }
 
 function calculateCriteriaAverages() {
-    // Mapa para acumular calificaciones por criterio
-    const criteriaScores = {
-        'Calidad Técnica': [],
-        'Creatividad': [],
-        'Vinculación Temática': [],
-        'Bienestar Colectivo': [],
-        'Uso Responsable IA': [],
-        'Potencial Impacto': []
-    };
+    const criteriaMap = new Map();
+    let essayCount = 0;
 
-    // Iterar sobre todos los ensayos y extraer calificaciones
+    // Iterar sobre todos los ensayos y acumular puntajes por criterio
     allEssays.forEach(essay => {
         const evaluacion = essay.evaluacion || essay;
+        const criterios = evaluacion.criterios || [];
         
-        // Extraer calificaciones de cada criterio
-        if (evaluacion.calidad_tecnica?.calificacion) {
-            criteriaScores['Calidad Técnica'].push(evaluacion.calidad_tecnica.calificacion);
-        }
-        if (evaluacion.creatividad?.calificacion) {
-            criteriaScores['Creatividad'].push(evaluacion.creatividad.calificacion);
-        }
-        if (evaluacion.vinculacion_tematica?.calificacion) {
-            criteriaScores['Vinculación Temática'].push(evaluacion.vinculacion_tematica.calificacion);
-        }
-        if (evaluacion.bienestar_colectivo?.calificacion) {
-            criteriaScores['Bienestar Colectivo'].push(evaluacion.bienestar_colectivo.calificacion);
-        }
-        if (evaluacion.uso_responsable_ia?.calificacion) {
-            criteriaScores['Uso Responsable IA'].push(evaluacion.uso_responsable_ia.calificacion);
-        }
-        if (evaluacion.potencial_impacto?.calificacion) {
-            criteriaScores['Potencial Impacto'].push(evaluacion.potencial_impacto.calificacion);
+        if (criterios.length > 0) {
+            essayCount++;
+            criterios.forEach(criterio => {
+                if (criterio.calificacion !== null && criterio.calificacion !== undefined) {
+                    const nombre = criterio.nombre || criterio.criterio;
+                    if (!criteriaMap.has(nombre)) {
+                        criteriaMap.set(nombre, []);
+                    }
+                    criteriaMap.get(nombre).push(criterio.calificacion);
+                }
+            });
         }
     });
 
-    // Calcular promedios solo para criterios con datos
+    // Calcular promedios
     const labels = [];
     const data = [];
 
-    Object.entries(criteriaScores).forEach(([criterio, scores]) => {
-        if (scores.length > 0) {
-            const avg = scores.reduce((a, b) => a + b, 0) / scores.length;
-            labels.push(criterio);
-            data.push(parseFloat(avg.toFixed(2)));
-        }
+    criteriaMap.forEach((values, name) => {
+        const avg = values.reduce((a, b) => a + b, 0) / values.length;
+        labels.push(name);
+        data.push(parseFloat(avg.toFixed(2)));
     });
 
     return { labels, data };
+}
+
+function createExampleRadarChart(ctx) {
+    criteriaRadarChartInstance = new Chart(ctx, {
+        type: 'radar',
+        data: {
+            labels: ['Técnica', 'Creatividad', 'Temática', 'Bienestar', 'IA', 'Impacto'],
+            datasets: [{
+                label: 'Promedio de la Generación',
+                data: [3.8, 4.2, 3.5, 4.0, 2.9, 3.6],
+                backgroundColor: 'rgba(59, 130, 246, 0.2)',
+                borderColor: '#3b82f6',
+                borderWidth: 2,
+                pointBackgroundColor: '#3b82f6',
+                pointBorderColor: '#fff',
+                pointHoverBackgroundColor: '#fff',
+                pointHoverBorderColor: '#3b82f6'
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: true,
+            scales: {
+                r: {
+                    beginAtZero: true,
+                    max: 5,
+                    ticks: {
+                        stepSize: 1
+                    }
+                }
+            },
+            plugins: {
+                legend: {
+                    display: true,
+                    position: 'top'
+                },
+                title: {
+                    display: true,
+                    text: '(Datos de ejemplo)',
+                    font: {
+                        size: 11,
+                        style: 'italic'
+                    }
+                }
+            }
+        }
+    });
 }
 
 // ============================================
@@ -1890,23 +1791,6 @@ function calculateCriteriaAverages() {
 
 let currentJudgeCriteria = [];
 let currentEssayForEval = null;
-
-// Función para cambiar entre tabs de navegación
-function switchToTab(section) {
-    // Actualizar estado visual de los tabs
-    const navTabIA = document.getElementById('navTabIA');
-    const navTabManual = document.getElementById('navTabManual');
-    
-    if (section === 'library') {
-        navTabIA.classList.add('active');
-        navTabManual.classList.remove('active');
-        returnToLibrary();
-    } else if (section === 'judge') {
-        navTabManual.classList.add('active');
-        navTabIA.classList.remove('active');
-        showJudgeEvaluation();
-    }
-}
 
 // Mostrar sección de evaluación manual
 async function showJudgeEvaluation() {
@@ -1924,7 +1808,12 @@ async function showJudgeEvaluation() {
 // Cargar criterios del usuario
 async function loadJudgeCriteria() {
     try {
-        const response = await authenticatedFetch('/api/criterios');
+        const token = localStorage.getItem('token');
+        const response = await fetch('/api/criterios', {
+            headers: {
+                'Authorization': `Bearer ${token}`
+            }
+        });
         
         if (!response.ok) throw new Error('Error al cargar criterios');
         
@@ -2067,7 +1956,12 @@ function calculateTotalScore() {
 // Cargar ensayos para el selector
 async function loadEssaysForSelection() {
     try {
-        const response = await authenticatedFetch('/api/ensayos');
+        const token = localStorage.getItem('token');
+        const response = await fetch('/api/ensayos', {
+            headers: {
+                'Authorization': `Bearer ${token}`
+            }
+        });
         
         if (!response.ok) throw new Error('Error al cargar ensayos');
         
@@ -2120,6 +2014,8 @@ async function requestAIAssistance() {
             Procesando...
         `;
         
+        const token = localStorage.getItem('token');
+        
         // Preparar datos de los criterios
         const criteriosData = currentJudgeCriteria.map(c => ({
             id: c.id,
@@ -2128,9 +2024,10 @@ async function requestAIAssistance() {
             peso: c.peso
         }));
         
-        const response = await authenticatedFetch(`/api/evaluar_con_criterios/${currentEssayForEval}`, {
+        const response = await fetch(`/api/evaluar_con_criterios/${currentEssayForEval}`, {
             method: 'POST',
             headers: {
+                'Authorization': `Bearer ${token}`,
                 'Content-Type': 'application/json'
             },
             body: JSON.stringify({ criterios: criteriosData })
@@ -2226,9 +2123,11 @@ async function saveManualEvaluation() {
         const generalComments = document.getElementById('generalComments').value;
         const totalScore = parseFloat(totalScoreValue.textContent);
         
-        const response = await authenticatedFetch(`/api/guardar_evaluacion_manual/${currentEssayForEval}`, {
+        const token = localStorage.getItem('token');
+        const response = await fetch(`/api/guardar_evaluacion_manual/${currentEssayForEval}`, {
             method: 'POST',
             headers: {
+                'Authorization': `Bearer ${token}`,
                 'Content-Type': 'application/json'
             },
             body: JSON.stringify({
@@ -2240,9 +2139,7 @@ async function saveManualEvaluation() {
         
         if (!response.ok) throw new Error('Error al guardar evaluación');
         
-        // ✅ ANIMACIÓN DE ÉXITO EN EL BOTÓN
-        showButtonSuccess(saveEvaluationBtn);
-        showEnhancedNotification('✓ Evaluación guardada exitosamente', 'success');
+        showNotification('Evaluación guardada exitosamente', 'success');
         
         // Limpiar formulario
         manualEvaluationForm.reset();
@@ -2260,151 +2157,4 @@ async function saveManualEvaluation() {
             Guardar
         `;
     }
-}
-
-// ============================================
-// 🎨 UX UTILITIES: SKELETON SCREENS & ANIMATIONS
-// ============================================
-
-/**
- * Genera un skeleton screen para tarjetas de ensayos
- * @param {number} count - Cantidad de skeletons a mostrar
- * @returns {string} HTML de skeleton cards
- */
-function createSkeletonCards(count = 3) {
-    const skeletons = [];
-    for (let i = 0; i < count; i++) {
-        skeletons.push(`
-            <div class="skeleton-card">
-                <div class="skeleton skeleton-title"></div>
-                <div class="skeleton skeleton-text"></div>
-                <div class="skeleton skeleton-text"></div>
-                <div class="skeleton skeleton-text short"></div>
-                <div class="skeleton skeleton-score"></div>
-            </div>
-        `);
-    }
-    return skeletons.join('');
-}
-
-/**
- * Muestra skeleton screen mientras carga contenido
- * @param {HTMLElement} container - Elemento donde mostrar los skeletons
- * @param {number} count - Cantidad de skeletons
- */
-function showSkeletonLoading(container, count = 3) {
-    if (!container) return;
-    container.innerHTML = createSkeletonCards(count);
-}
-
-/**
- * Animación de éxito en botón (check verde por 2 segundos)
- * @param {HTMLButtonElement} button - Botón a animar
- * @param {string} originalText - Texto original del botón
- */
-function showButtonSuccess(button, originalText = null) {
-    if (!button) return;
-    
-    // Guardar contenido original
-    const originalHTML = originalText || button.innerHTML;
-    const originalDisabled = button.disabled;
-    
-    // Aplicar estado de éxito
-    button.disabled = true;
-    button.classList.add('btn-success-animation', 'btn-check-icon');
-    button.innerHTML = '✓ Guardado';
-    
-    // Restaurar después de 2 segundos
-    setTimeout(() => {
-        button.classList.remove('btn-success-animation', 'btn-check-icon');
-        button.innerHTML = originalHTML;
-        button.disabled = originalDisabled;
-    }, 2000);
-}
-
-/**
- * Versión mejorada de showNotification con más opciones
- * @param {string} message - Mensaje a mostrar
- * @param {string} type - 'success', 'error', 'warning', 'info'
- * @param {number} duration - Duración en ms (default: 3000)
- */
-function showEnhancedNotification(message, type = 'info', duration = 3000) {
-    const icons = {
-        success: '✓',
-        error: '✕',
-        warning: '⚠',
-        info: 'ℹ'
-    };
-    
-    const colors = {
-        success: { bg: '#dcfce7', text: '#166534', border: '#10b981' },
-        error: { bg: '#fee2e2', text: '#991b1b', border: '#ef4444' },
-        warning: { bg: '#fef3c7', text: '#92400e', border: '#f59e0b' },
-        info: { bg: '#e0f2fe', text: '#0c4a6e', border: '#0ea5e9' }
-    };
-    
-    const color = colors[type] || colors.info;
-    const icon = icons[type] || icons.info;
-    
-    const notification = document.createElement('div');
-    notification.style.cssText = `
-        position: fixed;
-        top: 20px;
-        right: 20px;
-        background: ${color.bg};
-        color: ${color.text};
-        padding: 1rem 1.5rem;
-        border-radius: 12px;
-        border-left: 4px solid ${color.border};
-        box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
-        z-index: 10000;
-        font-weight: 500;
-        display: flex;
-        align-items: center;
-        gap: 0.75rem;
-        animation: slideInRight 0.3s cubic-bezier(0.68, -0.55, 0.265, 1.55);
-        max-width: 400px;
-    `;
-    
-    notification.innerHTML = `
-        <span style="font-size: 1.5em; line-height: 1;">${icon}</span>
-        <span>${message}</span>
-    `;
-    
-    document.body.appendChild(notification);
-    
-    setTimeout(() => {
-        notification.style.animation = 'slideOutRight 0.3s ease';
-        setTimeout(() => notification.remove(), 300);
-    }, duration);
-}
-
-// Agregar animaciones al CSS (si no existen)
-if (!document.querySelector('#ux-animations-style')) {
-    const style = document.createElement('style');
-    style.id = 'ux-animations-style';
-    style.textContent = `
-        @keyframes slideInRight {
-            from {
-                opacity: 0;
-                transform: translateX(100px);
-            }
-            to {
-                opacity: 1;
-                transform: translateX(0);
-            }
-        }
-        
-        @keyframes slideOutRight {
-            from {
-                opacity: 1;
-                transform: translateX(0);
-            }
-            to {
-                opacity: 0;
-                transform: translateX(100px);
-            }
-        }
-    `;
-    document.head.appendChild(style);
 }

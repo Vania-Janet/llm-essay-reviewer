@@ -12,49 +12,17 @@ import jwt
 
 
 class AuthManager:
-    """Gestor de autenticación con hashing seguro de contraseñas (Singleton)."""
-    
-    _instance = None
-    _initialized = False
-    
-    def __new__(cls, secret_key=None):
-        """Implementación Singleton para evitar regeneración de secret_key."""
-        if cls._instance is None:
-            cls._instance = super(AuthManager, cls).__new__(cls)
-        return cls._instance
+    """Gestor de autenticación con hashing seguro de contraseñas."""
     
     def __init__(self, secret_key=None):
         """
-        Inicializar el gestor de autenticación (solo una vez debido al Singleton).
+        Inicializar el gestor de autenticación.
         
         Args:
-            secret_key: Clave secreta para JWT. Si no se proporciona, usa JWT_SECRET_KEY del entorno.
-        
-        Raises:
-            ValueError: Si no hay secret_key y JWT_SECRET_KEY no está en el entorno en producción.
+            secret_key: Clave secreta para JWT. Si no se proporciona, se genera una.
         """
-        # Solo inicializar una vez
-        if self.__class__._initialized:
-            return
-        
-        if secret_key:
-            self.secret_key = secret_key
-        else:
-            jwt_secret = os.getenv('JWT_SECRET_KEY')
-            if not jwt_secret:
-                is_production = os.getenv('FLASK_ENV') == 'production'
-                if is_production:
-                    raise ValueError(
-                        "JWT_SECRET_KEY es requerida en producción. "
-                        "Configura la variable de entorno JWT_SECRET_KEY."
-                    )
-                # Desarrollo: usar clave fija (NO USAR EN PRODUCCIÓN)
-                jwt_secret = 'dev-jwt-secret-CHANGE-THIS-IN-PRODUCTION-87654321'
-                print("⚠️  WARNING: Usando JWT_SECRET_KEY de desarrollo. NO usar en producción.")
-            self.secret_key = jwt_secret
-        
+        self.secret_key = secret_key or os.getenv('JWT_SECRET_KEY') or secrets.token_hex(32)
         self.token_expiry_hours = 24
-        self.__class__._initialized = True
         
     def hash_password(self, password: str) -> str:
         """
@@ -126,22 +94,14 @@ class AuthManager:
     
     def get_token_from_request(self) -> str:
         """
-        Extraer token del header Authorization o de las cookies.
-        Prioridad: Cookie (más seguro) > Header (retrocompatibilidad)
+        Extraer token del header Authorization.
         
         Returns:
             Token o None
         """
-        # Primero intentar obtener de cookie (más seguro, HttpOnly)
-        token = request.cookies.get('auth_token')
-        if token:
-            return token
-        
-        # Fallback: header Authorization para retrocompatibilidad
         auth_header = request.headers.get('Authorization')
         if auth_header and auth_header.startswith('Bearer '):
             return auth_header.split(' ')[1]
-        
         return None
 
 

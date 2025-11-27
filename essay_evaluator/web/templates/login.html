@@ -437,14 +437,14 @@
                 const response = await fetch(`${API_URL}/api/login`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    credentials: 'same-origin',  // Incluir cookies
                     body: JSON.stringify({ username, password })
                 });
 
                 const data = await response.json();
 
                 if (response.ok) {
-                    // Token ahora está en cookie HttpOnly, solo guardar usuario para UI
+                    // Guardar token
+                    localStorage.setItem('auth_token', data.token);
                     localStorage.setItem('user', JSON.stringify(data.user));
                     
                     // Redirigir a la app principal
@@ -490,7 +490,7 @@
                 const data = await response.json();
 
                 if (response.ok) {
-                    // Registro aún retorna token en JSON (no cookie), guardar ambos
+                    // Guardar token
                     localStorage.setItem('auth_token', data.token);
                     localStorage.setItem('user', JSON.stringify(data.user));
                     
@@ -528,15 +528,18 @@
 
         // Verificar si ya está autenticado
         window.addEventListener('DOMContentLoaded', () => {
-            // Verificar autenticación con cookie
-            fetch(`${API_URL}/api/verify-token`, {
-                credentials: 'same-origin'  // Incluir cookies automáticamente
-            })
-            .then(response => {
-                if (response.ok) {
-                    window.location.href = '/index.html';
-                }
-            });
+            const token = localStorage.getItem('auth_token');
+            if (token) {
+                // Verificar si el token es válido
+                fetch(`${API_URL}/api/verify-token`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                })
+                .then(response => {
+                    if (response.ok) {
+                        window.location.href = '/index.html';
+                    }
+                });
+            }
         });
     </script>
 </body>

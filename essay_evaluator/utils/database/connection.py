@@ -7,12 +7,10 @@ import hashlib
 from datetime import datetime
 from pathlib import Path
 from flask_sqlalchemy import SQLAlchemy
-from flask_migrate import Migrate
 from sqlalchemy import JSON, Index, ForeignKey, UniqueConstraint, func
 from sqlalchemy.orm import relationship
 
 db = SQLAlchemy()
-migrate = Migrate()
 
 
 class Usuario(db.Model):
@@ -25,13 +23,10 @@ class Usuario(db.Model):
     email = db.Column(db.String(120), unique=True, nullable=False, index=True)
     password_hash = db.Column(db.String(255), nullable=False)  # bcrypt hash
     nombre_completo = db.Column(db.String(200), nullable=True)
-    rol = db.Column(db.String(50), default='usuario', nullable=False)  # Opciones: 'admin', 'jurado', 'usuario', 'sistema_ia'
+    rol = db.Column(db.String(50), default='usuario', nullable=False)  # usuario, admin, etc.
     activo = db.Column(db.Boolean, default=True, nullable=False)
     fecha_creacion = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
     ultimo_acceso = db.Column(db.DateTime, nullable=True)
-    
-    # Relación con evaluaciones como jurado
-    evaluaciones_jurado = relationship('EvaluacionJurado', back_populates='jurado', cascade='all, delete-orphan')
     
     def __repr__(self):
         return f'<Usuario {self.username}>'
@@ -106,12 +101,10 @@ class Ensayo(db.Model):
     __tablename__ = 'ensayos'
     
     id = db.Column(db.Integer, primary_key=True)
-    nombre_archivo = db.Column(db.String(255), nullable=False, index=True)  # Nombre único con UUID
-    nombre_archivo_original = db.Column(db.String(255), nullable=True)  # Nombre original del archivo subido
+    nombre_archivo = db.Column(db.String(255), nullable=False, index=True)  # Índice para búsqueda rápida
     autor = db.Column(db.String(255), nullable=True, index=True)  # Extraído del nombre
     texto_completo = db.Column(db.Text, nullable=False)
     fecha_evaluacion = db.Column(db.DateTime, default=datetime.utcnow, index=True)  # Índice para ordenar
-    fecha_modificacion = db.Column(db.DateTime, onupdate=datetime.utcnow, nullable=True)  # 🆕 Tracking de cambios
     
     # Hash del texto para detección de duplicados rápida
     texto_hash = db.Column(db.String(64), unique=True, index=True)
@@ -199,9 +192,7 @@ class Ensayo(db.Model):
         return {
             'id': self.id,
             'nombre_archivo': self.nombre_archivo,
-            'nombre_archivo_original': self.nombre_archivo_original or self.nombre_archivo,
             'fecha_evaluacion': self.fecha_evaluacion.isoformat(),
-            'fecha_modificacion': self.fecha_modificacion.isoformat() if self.fecha_modificacion else None,
             'puntuacion_total': self.puntuacion_total,
             'texto_preview': self.texto_completo[:200] + '...' if len(self.texto_completo) > 200 else self.texto_completo,
             'tiene_anexo': self.tiene_anexo,
@@ -254,147 +245,6 @@ class PuntajeCriterio(db.Model):
             'comentario': self.comentario,
             'peso': self.peso,
             'fecha_creacion': self.fecha_creacion.isoformat()
-        }
-
-
-class EvaluacionJurado(db.Model):
-    """Tabla intermedia para evaluaciones de jurados.
-    Implementa privacidad: cada jurado solo ve sus propias evaluaciones.
-    El admin ve todas las evaluaciones de todos los jurados.
-    """
-    
-    __tablename__ = 'evaluaciones_jurado'
-    
-    id = db.Column(db.Integer, primary_key=True)
-    
-    # Relaciones
-    ensayo_id = db.Column(db.Integer, ForeignKey('ensayos.id', ondelete='CASCADE'), nullable=False, index=True)
-    jurado_id = db.Column(db.Integer, ForeignKey('usuarios.id', ondelete='CASCADE'), nullable=False, index=True)
-    
-    # Puntuaciones por criterio (0-5)
-    calificacion_tecnica = db.Column(db.Float, nullable=False, default=0.0)
-    calificacion_creatividad = db.Column(db.Float, nullable=False, default=0.0)
-    calificacion_vinculacion = db.Column(db.Float, nullable=False, default=0.0)
-    calificacion_bienestar = db.Column(db.Float, nullable=False, default=0.0)
-    calificacion_uso_ia = db.Column(db.Float, nullable=False, default=0.0)
-    calificacion_impacto = db.Column(db.Float, nullable=False, default=0.0)
-    
-    # Comentarios por criterio
-    comentario_tecnica = db.Column(db.Text, nullable=True)
-    comentario_creatividad = db.Column(db.Text, nullable=True)
-    comentario_vinculacion = db.Column(db.Text, nullable=True)
-    comentario_bienestar = db.Column(db.Text, nullable=True)
-    comentario_uso_ia = db.Column(db.Text, nullable=True)
-    comentario_impacto = db.Column(db.Text, nullable=True)
-    
-    # Comentario general
-    comentario_general = db.Column(db.Text, nullable=True)
-    
-    # Puntuación total calculada (promedio ponderado)
-    puntuacion_total = db.Column(db.Float, nullable=False, default=0.0, index=True)
-    
-    # Estado de la evaluación
-    estado = db.Column(db.String(20), nullable=False, default='borrador', index=True)  # borrador, completada
-    
-    # Control de tiempos
-    fecha_creacion = db.Column(db.DateTime, default=datetime.utcnow, nullable=False, index=True)
-    fecha_modificacion = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
-    fecha_completada = db.Column(db.DateTime, nullable=True, index=True)
-    
-    # Relaciones
-    ensayo = relationship('Ensayo', backref='evaluaciones_jurado')
-    jurado = relationship('Usuario', back_populates='evaluaciones_jurado')
-    
-    # Índices para privacidad y performance
-    __table_args__ = (
-        # Un jurado solo puede evaluar un ensayo una vez
-        UniqueConstraint('ensayo_id', 'jurado_id', name='uq_ensayo_jurado'),
-        # Índice para filtrar evaluaciones de un jurado específico
-        Index('idx_jurado_estado', 'jurado_id', 'estado'),
-        # Índice para obtener todas las evaluaciones de un ensayo (admin)
-        Index('idx_ensayo_estado', 'ensayo_id', 'estado'),
-        # Índice para búsquedas por fecha
-        Index('idx_fecha_estado', 'fecha_completada', 'estado'),
-    )
-    
-    def calcular_puntuacion_total(self):
-        """Calcula la puntuación total basada en los pesos de cada criterio."""
-        pesos = {
-            'tecnica': 0.25,      # 25%
-            'creatividad': 0.20,  # 20%
-            'vinculacion': 0.15,  # 15%
-            'bienestar': 0.20,    # 20%
-            'uso_ia': 0.00,       # 0% (no se considera en el total para jurados humanos)
-            'impacto': 0.20       # 20%
-        }
-        
-        self.puntuacion_total = (
-            self.calificacion_tecnica * pesos['tecnica'] +
-            self.calificacion_creatividad * pesos['creatividad'] +
-            self.calificacion_vinculacion * pesos['vinculacion'] +
-            self.calificacion_bienestar * pesos['bienestar'] +
-            self.calificacion_impacto * pesos['impacto']
-        )
-        return self.puntuacion_total
-    
-    def marcar_completada(self):
-        """Marca la evaluación como completada y registra la fecha."""
-        self.estado = 'completada'
-        self.fecha_completada = datetime.utcnow()
-        self.calcular_puntuacion_total()
-    
-    def to_dict(self, incluir_jurado=False):
-        """Convierte la evaluación a diccionario.
-        
-        Args:
-            incluir_jurado: Si True, incluye información del jurado (solo para admin)
-        """
-        data = {
-            'id': self.id,
-            'ensayo_id': self.ensayo_id,
-            'jurado_id': self.jurado_id,
-            'calificaciones': {
-                'tecnica': self.calificacion_tecnica,
-                'creatividad': self.calificacion_creatividad,
-                'vinculacion': self.calificacion_vinculacion,
-                'bienestar': self.calificacion_bienestar,
-                'uso_ia': self.calificacion_uso_ia,
-                'impacto': self.calificacion_impacto
-            },
-            'comentarios': {
-                'tecnica': self.comentario_tecnica,
-                'creatividad': self.comentario_creatividad,
-                'vinculacion': self.comentario_vinculacion,
-                'bienestar': self.comentario_bienestar,
-                'uso_ia': self.comentario_uso_ia,
-                'impacto': self.comentario_impacto,
-                'general': self.comentario_general
-            },
-            'puntuacion_total': self.puntuacion_total,
-            'estado': self.estado,
-            'fecha_creacion': self.fecha_creacion.isoformat() if self.fecha_creacion else None,
-            'fecha_modificacion': self.fecha_modificacion.isoformat() if self.fecha_modificacion else None,
-            'fecha_completada': self.fecha_completada.isoformat() if self.fecha_completada else None
-        }
-        
-        if incluir_jurado and self.jurado:
-            data['jurado'] = {
-                'id': self.jurado.id,
-                'nombre': self.jurado.nombre_completo or self.jurado.username,
-                'rol': self.jurado.rol
-            }
-        
-        return data
-    
-    def to_summary(self):
-        """Devuelve un resumen de la evaluación."""
-        return {
-            'id': self.id,
-            'ensayo_id': self.ensayo_id,
-            'jurado_id': self.jurado_id,
-            'puntuacion_total': self.puntuacion_total,
-            'estado': self.estado,
-            'fecha_completada': self.fecha_completada.isoformat() if self.fecha_completada else None
         }
 
 
@@ -824,7 +674,7 @@ def get_puntajes_por_criterio(ensayo_id: int) -> dict:
 
 
 def init_db(app):
-    """Inicializa la base de datos con Flask-Migrate."""
+    """Inicializa la base de datos."""
     # Configurar la base de datos SQLite en el directorio raíz del proyecto
     # Esto asegura que siempre use la misma base de datos sin importar desde dónde se ejecute
     project_root = Path(__file__).parent
@@ -835,15 +685,10 @@ def init_db(app):
     app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
     
     db.init_app(app)
-    migrate.init_app(app, db)  # 🚀 Flask-Migrate inicializado
     
     with app.app_context():
-        # NOTA: En producción, usar 'flask db upgrade' en lugar de create_all()
-        # Por ahora mantenemos create_all() para compatibilidad
         db.create_all()
         print(f"✅ Base de datos inicializada en: {db_path.absolute()}")
-        print(f"💡 Usa 'flask db migrate' para crear migraciones")
-        print(f"💡 Usa 'flask db upgrade' para aplicar migraciones")
         
         # Verificar cuántos ensayos hay en la base de datos
         try:

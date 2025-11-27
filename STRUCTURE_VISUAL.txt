@@ -1,0 +1,264 @@
+╔══════════════════════════════════════════════════════════════════════════════╗
+║                    ESSAY EVALUATOR - PROJECT STRUCTURE                       ║
+║                         Professional Architecture                            ║
+╚══════════════════════════════════════════════════════════════════════════════╝
+
+📦 essay-agent/ (Project Root)
+│
+├─── 📦 essay_evaluator/           ← Main Application Package
+│    │
+│    ├─── 🧠 core/                 ← Business Logic Layer
+│    │    ├─── agent/              
+│    │    │    └─── evaluator.py     [EvaluadorEnsayos - LangGraph Agent]
+│    │    ├─── evaluation/
+│    │    │    └─── prompts.py       [LLM Prompt Templates]
+│    │    └─── models/
+│    │         └─── evaluation.py    [Pydantic Data Models]
+│    │
+│    ├─── 🌐 api/                  ← REST API Layer
+│    │    ├─── app.py                [Flask Application]
+│    │    ├─── routes/
+│    │    │    ├─── auth.py          [Authentication Endpoints]
+│    │    │    └─── essays.py        [Essay Operations]
+│    │    └─── middleware/
+│    │         ├─── auth.py          [JWT Verification]
+│    │         └─── error_handlers.py [Error Handling]
+│    │
+│    ├─── 🎨 web/                  ← Presentation Layer
+│    │    ├─── static/
+│    │    │    ├─── css/
+│    │    │    │    └─── styles.css  [Application Styles]
+│    │    │    ├─── js/
+│    │    │    │    ├─── script.js   [Main App Logic]
+│    │    │    │    └─── criteria-management.js
+│    │    │    └─── images/
+│    │    │         ├─── icon.png
+│    │    │         └─── logo.png
+│    │    └─── templates/
+│    │         ├─── index.html       [Main Application]
+│    │         └─── login.html       [Login Page]
+│    │
+│    ├─── 🔧 utils/                ← Utility Layer
+│    │    ├─── pdf/
+│    │    │    └─── processor.py     [PDF Text Extraction]
+│    │    ├─── database/
+│    │    │    └─── connection.py    [SQLAlchemy Models]
+│    │    └─── validators.py         [Input Validation]
+│    │
+│    ├─── 💾 data/                 ← Data Storage
+│    │    ├─── raw/                  [Uploaded PDFs]
+│    │    ├─── processed/            [Extracted Text]
+│    │    └─── database/
+│    │         └─── essays.db        [SQLite Database]
+│    │
+│    └─── 🧪 tests/                ← Test Suite
+│         ├─── test_agent.py
+│         ├─── test_api.py
+│         └─── fixtures/
+│
+├─── 🛠️  scripts/                  ← Utility Scripts
+│    ├─── migrate_structure.py      [Structure Migration]
+│    ├─── setup_database.py         [DB Initialization]
+│    ├─── batch_evaluate.py         [Batch Processing]
+│    └─── load_processed_essays.py  [Data Import]
+│
+├─── �� docs/                      ← Documentation
+│    ├─── architecture/
+│    │    └─── system_design.md     [Architecture Overview]
+│    ├─── api/
+│    │    └─── endpoints.md         [API Reference]
+│    └─── user_guide/
+│         └─── getting_started.md   [Quick Start Guide]
+│
+├─── ⚙️  config/                   ← Configuration
+│    ├─── development.py            [Dev Settings]
+│    └─── production.py             [Prod Settings]
+│
+├─── 📝 Root Files
+│    ├─── .env.example              [Environment Template]
+│    ├─── .gitignore                [Git Ignore Rules]
+│    ├─── requirements.txt          [Production Dependencies]
+│    ├─── requirements-dev.txt      [Development Dependencies]
+│    ├─── setup.py                  [Package Configuration]
+│    ├─── pytest.ini                [Test Configuration]
+│    ├─── README_NEW.md             [Project README]
+│    ├─── PROJECT_STRUCTURE.md      [Structure Documentation]
+│    ├─── REORGANIZATION_SUMMARY.md [Migration Guide]
+│    └─── LICENSE                   [License File]
+│
+└─── 🗂️  Data Directories
+     ├─── logs/                     [Application Logs]
+     ├─── .venv/                    [Virtual Environment]
+     └─── __pycache__/              [Python Cache]
+
+
+╔══════════════════════════════════════════════════════════════════════════════╗
+║                          LAYER ARCHITECTURE                                  ║
+╚══════════════════════════════════════════════════════════════════════════════╝
+
+  ┌─────────────────────────────────────────────────────────────────┐
+  │  🎨 Presentation Layer (Web Interface)                          │
+  │  ├─ HTML Templates                                              │
+  │  ├─ CSS Styles                                                  │
+  │  └─ JavaScript Logic                                            │
+  └──────────────────────────┬──────────────────────────────────────┘
+                             │ HTTP/JSON
+                             ▼
+  ┌─────────────────────────────────────────────────────────────────┐
+  │  🌐 API Layer (Flask REST API)                                  │
+  │  ├─ Authentication & Authorization                              │
+  │  ├─ Request Validation                                          │
+  │  ├─ Error Handling                                              │
+  │  └─ Response Serialization                                      │
+  └──────────────────────────┬──────────────────────────────────────┘
+                             │
+                             ▼
+  ┌─────────────────────────────────────────────────────────────────┐
+  │  🧠 Business Logic Layer (Core)                                 │
+  │  ├─ LangGraph Agent (Evaluation Orchestration)                 │
+  │  ├─ Evaluation Criteria (6 Parallel Nodes)                     │
+  │  ├─ Prompt Templates                                            │
+  │  └─ Data Models (Pydantic)                                      │
+  └──────────────────────────┬──────────────────────────────────────┘
+                             │
+                ┌────────────┴────────────┐
+                ▼                         ▼
+  ┌──────────────────────┐   ┌──────────────────────────┐
+  │  🔧 Utility Layer    │   │  💾 Data Layer           │
+  │  ├─ PDF Processing   │   │  ├─ SQLAlchemy ORM       │
+  │  ├─ Text Cleaning    │   │  ├─ Database Operations  │
+  │  └─ Validation       │   │  └─ File Storage         │
+  └──────────────────────┘   └──────────────────────────┘
+
+
+╔══════════════════════════════════════════════════════════════════════════════╗
+║                          DATA FLOW DIAGRAM                                   ║
+╚══════════════════════════════════════════════════════════════════════════════╝
+
+  User uploads PDF
+       │
+       ▼
+  ┌──────────────┐
+  │ Web Upload   │ ──────→ Save to data/raw/
+  └──────┬───────┘
+         │
+         ▼
+  ┌──────────────┐
+  │ PDF Processor│ ──────→ Extract text
+  └──────┬───────┘
+         │
+         ▼
+  ┌──────────────┐
+  │ Text Cleaner │ ──────→ Clean & normalize
+  └──────┬───────┘
+         │
+         ▼
+  ┌────────────────────────┐
+  │ LangGraph Agent        │
+  │   ┌────────────────┐   │
+  │   │ 6 Criteria     │   │ ──→ Parallel evaluation
+  │   │ (Parallel)     │   │     using GPT-4
+  │   └────────────────┘   │
+  └──────┬─────────────────┘
+         │
+         ▼
+  ┌──────────────┐
+  │ Score Calc   │ ──────→ Weighted average
+  └──────┬───────┘
+         │
+         ▼
+  ┌──────────────┐
+  │ Database     │ ──────→ Save to essays.db
+  └──────┬───────┘
+         │
+         ▼
+  ┌──────────────┐
+  │ JSON Response│ ──────→ Return to client
+  └──────┬───────┘
+         │
+         ▼
+  Display results in UI
+
+
+╔══════════════════════════════════════════════════════════════════════════════╗
+║                        IMPORT PATH STRUCTURE                                 ║
+╚══════════════════════════════════════════════════════════════════════════════╝
+
+  ✅ CORRECT (New Structure):
+  
+    from essay_evaluator.core.agent import EvaluadorEnsayos
+    from essay_evaluator.core.models.evaluation import EvaluacionEnsayo
+    from essay_evaluator.utils.pdf.processor import PDFProcessor
+    from essay_evaluator.api.routes.auth import AuthManager
+  
+  ❌ INCORRECT (Old Structure):
+  
+    from agent import EvaluadorEnsayos          # Ambiguous!
+    from models import EvaluacionEnsayo         # Which models?
+    from pdf_processor import PDFProcessor      # Not clear!
+
+
+╔══════════════════════════════════════════════════════════════════════════════╗
+║                     KEY DESIGN DECISIONS                                     ║
+╚══════════════════════════════════════════════════════════════════════════════╝
+
+  1. 🎯 Separation of Concerns
+     - Core logic independent of frameworks
+     - Easy to test and modify
+
+  2. 📦 Modular Design
+     - Each module has single responsibility
+     - Loose coupling, high cohesion
+
+  3. 🔌 Framework Agnostic Core
+     - Core doesn't depend on Flask/SQLAlchemy
+     - Can be reused in CLI, different APIs
+
+  4. 🧪 Testability First
+     - Clear test organization
+     - Easy to mock dependencies
+
+  5. 📚 Documentation Driven
+     - Comprehensive docs for all levels
+     - Architecture clearly explained
+
+  6. 🚀 Scalability Ready
+     - Easy to add features
+     - Clear extension points
+     - Microservices migration path
+
+
+╔══════════════════════════════════════════════════════════════════════════════╗
+║                         QUICK START COMMANDS                                 ║
+╚══════════════════════════════════════════════════════════════════════════════╝
+
+  # Migrate to new structure
+  python scripts/migrate_structure.py
+  
+  # Run application
+  python -m essay_evaluator.api.app
+  
+  # Run tests
+  pytest essay_evaluator/tests/
+  
+  # Install package
+  pip install -e .
+  
+  # Generate documentation
+  cd docs && make html
+
+
+╔══════════════════════════════════════════════════════════════════════════════╗
+║                         BENEFITS AT A GLANCE                                 ║
+╚══════════════════════════════════════════════════════════════════════════════╝
+
+  ⭐ Maintainability     - Easy to find and modify code
+  ⭐ Testability         - Independent component testing
+  ⭐ Scalability         - Add features without breaking code
+  ⭐ Collaboration       - Clear structure for team work
+  ⭐ Reusability         - Components work in different contexts
+  ⭐ Professional        - Follows Python best practices
+  ⭐ Documentation       - Comprehensive guides included
+  ⭐ Type Safety         - Pydantic models with validation
+  ⭐ Performance         - Parallel evaluation with LangGraph
+  ⭐ Security            - JWT auth, input validation, bcrypt
