@@ -200,7 +200,7 @@ class Ensayo(db.Model):
             'fecha_evaluacion': self.fecha_evaluacion.isoformat(),
             'fecha_modificacion': self.fecha_modificacion.isoformat() if self.fecha_modificacion else None,
             'puntuacion_total': self.puntuacion_total,
-            'texto_preview': self.texto_completo[:200] + '...' if len(self.texto_completo) > 200 else self.texto_completo,
+            'texto_preview': self.texto_completo[:500] + '...' if len(self.texto_completo) > 500 else self.texto_completo,
             'tiene_anexo': self.tiene_anexo,
             'evaluacion_data': {
                 'puntuacion_total': self.puntuacion_total,

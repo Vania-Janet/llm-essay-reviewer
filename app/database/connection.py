@@ -34,10 +34,10 @@ def init_db(app):
         # Crear tablas si no existen
         db.create_all()
         
-        print(f"✅ Base de datos inicializada en: {app.config['DATABASE_PATH']}")
+        print(f"Base de datos inicializada en: {app.config['DATABASE_PATH']}")
         print(f"   Archivo existe: {app.config['DATABASE_PATH'].exists()}")
-        print("💡 Usa 'python manage.py migrate' para crear migraciones")
-        print("💡 Usa 'python manage.py upgrade' para aplicar migraciones")
+        print("Usa 'python manage.py migrate' para crear migraciones")
+        print("Usa 'python manage.py upgrade' para aplicar migraciones")
 
 
 def get_db():

@@ -17,7 +17,7 @@ try:
     OPENPYXL_AVAILABLE = True
 except ImportError:
     OPENPYXL_AVAILABLE = False
-    print("⚠️ openpyxl no está instalado. Instalando...")
+    print("WARN: openpyxl no esta instalado. Instalando...")
     import subprocess
     subprocess.check_call([sys.executable, "-m", "pip", "install", "openpyxl"])
     from openpyxl import Workbook
@@ -50,16 +50,16 @@ def crear_excel_profesional(output_path: str = None):
         output_path: Ruta de salida para el Excel (opcional)
     """
     print(f"\n{'='*70}")
-    print("📊 GENERANDO EXCEL PROFESIONAL")
+    print("GENERANDO EXCEL PROFESIONAL")
     print(f"{'='*70}\n")
     
     # Obtener ensayos de la base de datos
-    print(f"📖 Cargando ensayos de la base de datos...")
+    print(f"Cargando ensayos de la base de datos...")
     ensayos = obtener_ensayos()
-    print(f"✅ {len(ensayos)} ensayos cargados\n")
+    print(f"{len(ensayos)} ensayos cargados\n")
     
     if not ensayos:
-        print("❌ No hay ensayos en la base de datos")
+        print("ERROR: No hay ensayos en la base de datos")
         return None
     
     # Determinar ruta de salida
@@ -68,7 +68,7 @@ def crear_excel_profesional(output_path: str = None):
         output_path = Path.cwd() / f"ensayos_evaluados_{timestamp}_profesional.xlsx"
     
     # Crear workbook
-    print(f"💾 Guardando en: {output_path}")
+    print(f"Guardando en: {output_path}")
     wb = Workbook()
     ws = wb.active
     ws.title = 'Evaluaciones'
@@ -113,7 +113,7 @@ def crear_excel_profesional(output_path: str = None):
         ]
         ws.append(row_data)
     
-    print("🎨 Aplicando formato profesional...")
+    print("Aplicando formato profesional...")
     
     # Colores corporativos (azul profesional y gris)
     header_fill = PatternFill(start_color="1F4E78", end_color="1F4E78", fill_type="solid")
@@ -220,7 +220,7 @@ def crear_excel_profesional(output_path: str = None):
     
     # Guardar
     wb.save(output_path)
-    print(f"✅ Excel profesional guardado exitosamente\n")
+    print(f"Excel profesional guardado exitosamente\n")
     
     # Calcular estadísticas
     con_anexo = sum(1 for e in ensayos if e.tiene_anexo)
@@ -230,32 +230,32 @@ def crear_excel_profesional(output_path: str = None):
     
     # Estadísticas
     print(f"{'='*70}")
-    print("📊 ESTADÍSTICAS DEL ARCHIVO")
+    print("ESTADISTICAS DEL ARCHIVO")
     print(f"{'='*70}")
     print(f"Total de ensayos: {len(ensayos)}")
     print(f"Con anexo: {con_anexo}")
     print(f"Sin anexo: {sin_anexo}")
-    print(f"Puntuación promedio: {promedio:.2f}")
-    print(f"Puntuación máxima: {max(puntuaciones):.2f}")
-    print(f"Puntuación mínima: {min(puntuaciones):.2f}")
+    print(f"Puntuacion promedio: {promedio:.2f}")
+    print(f"Puntuacion maxima: {max(puntuaciones):.2f}")
+    print(f"Puntuacion minima: {min(puntuaciones):.2f}")
     print(f"\n{'='*70}")
-    print("✨ ARCHIVO EXCEL PROFESIONAL GENERADO")
+    print("ARCHIVO EXCEL PROFESIONAL GENERADO")
     print(f"{'='*70}\n")
     
     return output_path
 
 def main():
     """Función principal."""
-    print(f"📂 Generando Excel desde base de datos...")
+    print(f"Generando Excel desde base de datos...")
     
     # Generar Excel
     output_path = crear_excel_profesional()
     
     if output_path:
-        print(f"🎉 ¡Listo! Abre el archivo: {output_path}")
+        print(f"Listo! Abre el archivo: {output_path}")
         return 0
     else:
-        print("❌ No se pudo generar el archivo Excel")
+        print("ERROR: No se pudo generar el archivo Excel")
         return 1
 
 if __name__ == '__main__':

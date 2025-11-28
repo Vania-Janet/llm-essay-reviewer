@@ -208,7 +208,7 @@ def evaluate():
         try:
             # Copiar a ubicación permanente
             shutil.copy2(filepath, permanent_pdf_path)
-            print(f"✅ PDF guardado permanentemente en: {permanent_pdf_path}")
+            print(f"PDF guardado permanentemente en: {permanent_pdf_path}")
             
             # Extraer texto del PDF
             texto = pdf_processor.procesar_pdf(str(filepath), limpiar=True)
@@ -223,7 +223,7 @@ def evaluate():
                     'error': 'No se pudo extraer suficiente texto del PDF'
                 }), 400
             
-            # 🚀 HASH CACHE: Verificar si este texto ya fue evaluado
+            # HASH CACHE: Verificar si este texto ya fue evaluado
             texto_hash = hashlib.sha256(texto.encode('utf-8')).hexdigest()
             ensayo_existente = Ensayo.query.filter_by(texto_hash=texto_hash).first()
             
@@ -253,11 +253,11 @@ def evaluate():
                     'comentario_general': ensayo_existente.comentario_general,
                     'tiene_anexo': ensayo_existente.tiene_anexo,
                     'cache_hit': True,
-                    'mensaje_cache': f'✨ Evaluación recuperada del caché (archivo original: {ensayo_existente.nombre_archivo_original})'
+                    'mensaje_cache': f'Evaluacion recuperada del cache (archivo original: {ensayo_existente.nombre_archivo_original})'
                 }
                 return jsonify(resultado)
             
-            print(f"🔄 CACHE MISS: Evaluando nuevo ensayo con OpenAI")
+            print(f"CACHE MISS: Evaluando nuevo ensayo con OpenAI")
             print(f"   Hash: {texto_hash[:16]}...")
             
             # Verificar si tiene anexo de IA
@@ -276,20 +276,20 @@ def evaluate():
                         if nombre_anexo.lower().endswith('.pdf'):
                             from app.utils.pdf_processor import extraer_texto_pdf
                             texto_anexo = extraer_texto_pdf(str(ruta_anexo))
-                            print(f"✅ Anexo de IA PDF cargado: {nombre_anexo}")
+                            print(f"Anexo de IA PDF cargado: {nombre_anexo}")
                         else:
                             with open(ruta_anexo, 'r', encoding='utf-8') as f:
                                 texto_anexo = f.read()
-                            print(f"✅ Anexo de IA TXT cargado: {nombre_anexo}")
+                            print(f"Anexo de IA TXT cargado: {nombre_anexo}")
                         
                         nombre_autor_anexo = nombre_anexo.replace('AnexoIA_', '').replace('.txt', '').replace('.pdf', '').replace('_', ' ')
                     except Exception as e:
-                        print(f"⚠️ Error al cargar anexo: {str(e)}")
+                        print(f"WARN: Error al cargar anexo: {str(e)}")
                         texto_anexo = None
                 else:
-                    print(f"⚠️ Anexo no encontrado en ruta: {ruta_anexo}")
+                    print(f"WARN: Anexo no encontrado en ruta: {ruta_anexo}")
             
-            # 🚀 ASYNC: Generar job ID y enviar a background
+            # ASYNC: Generar job ID y enviar a background
             job_id = str(uuid.uuid4())
             usuario_id = getattr(request, 'user_id', None)
             
@@ -310,7 +310,7 @@ def evaluate():
                 nombre_autor_anexo, usuario_id
             )
             
-            print(f"✅ Job {job_id} enviado a procesamiento en background")
+            print(f"Job {job_id} enviado a procesamiento en background")
             
             # Retornar job_id para que el frontend pueda hacer polling
             return jsonify({

@@ -57,7 +57,6 @@ const essaysHistorySection = document.getElementById('essaysHistorySection');
 const essaysLibrarySection = document.getElementById('essaysLibrarySection');
 const libraryList = document.getElementById('libraryList');
 const compareLibraryBtn = document.getElementById('compareLibraryBtn');
-const uploadNewBtn = document.getElementById('uploadNewBtn');
 const viewHistoryBtn = document.getElementById('viewHistoryBtn');
 const closeHistoryBtn = document.getElementById('closeHistoryBtn');
 const essaysList = document.getElementById('essaysList');
@@ -257,19 +256,41 @@ function sanitizeText(text) {
 let currentFileName = '';  // Para almacenar el nombre del archivo evaluado
 let allEssays = [];  // Para almacenar todos los ensayos cargados
 
-// Event Listeners
-selectFileBtn.addEventListener('click', () => fileInput.click());
-fileInput.addEventListener('change', handleFileSelect);
-evaluateBtn.addEventListener('click', evaluateEssay);
-newEvaluationBtn.addEventListener('click', resetEvaluation);
+// Event Listeners - con verificación null para evitar errores
+if (selectFileBtn) selectFileBtn.addEventListener('click', () => fileInput?.click());
+if (fileInput) fileInput.addEventListener('change', handleFileSelect);
+if (evaluateBtn) evaluateBtn.addEventListener('click', evaluateEssay);
+if (newEvaluationBtn) newEvaluationBtn.addEventListener('click', resetEvaluation);
 
 // Chat event listeners - Nuevo sistema flotante
-if (chatWidgetBtn) chatWidgetBtn.addEventListener('click', toggleChat);
-if (closeChatBtn) closeChatBtn.addEventListener('click', toggleChat);
-if (chatToggle) chatToggle.addEventListener('click', toggleChat); // Mantener compatibilidad
+function openChat() {
+    chatPanel?.classList.add('active');
+}
 
-chatSendBtn.addEventListener('click', sendChatMessage);
-chatInput.addEventListener('keydown', (e) => {
+function closeChat() {
+    chatPanel?.classList.remove('active');
+}
+
+if (chatWidgetBtn) chatWidgetBtn.addEventListener('click', openChat);
+if (closeChatBtn) closeChatBtn.addEventListener('click', closeChat);
+if (chatToggle) chatToggle.addEventListener('click', openChat); // Mantener compatibilidad
+
+// Cerrar si se presiona Escape
+document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') closeChat();
+});
+
+// Función toggleChat mantenida para compatibilidad interna si es necesaria
+function toggleChat() {
+    if (chatPanel.classList.contains('active')) {
+        closeChat();
+    } else {
+        openChat();
+    }
+}
+
+if (chatSendBtn) chatSendBtn.addEventListener('click', sendChatMessage);
+if (chatInput) chatInput.addEventListener('keydown', (e) => {
     if (e.key === 'Enter' && !e.shiftKey) {
         e.preventDefault();
         sendChatMessage();
@@ -278,13 +299,64 @@ chatInput.addEventListener('keydown', (e) => {
 
 // Edit and download event listeners
 // editReportBtn.addEventListener('click', toggleEditMode); // Botón eliminado
-downloadReportBtn.addEventListener('click', downloadReport);
-document.getElementById('totalScore').addEventListener('click', openScoreEditor);
-closeScoreEditor.addEventListener('click', () => {
-    scoreEditor.style.display = 'none';
+if (downloadReportBtn) downloadReportBtn.addEventListener('click', async () => {
+    try {
+        if (!currentEvaluation || !currentEvaluation.id) {
+            alert('No hay evaluación seleccionada para descargar.');
+            return;
+        }
+
+        downloadReportBtn.disabled = true;
+        const originalContent = downloadReportBtn.innerHTML;
+        downloadReportBtn.textContent = 'Generando PDF...';
+
+        // Usar el endpoint del backend para generar el PDF profesional
+        const response = await authenticatedFetch(`/api/essays/${currentEvaluation.id}/report`);
+        
+        if (!response.ok) {
+            throw new Error('Error al generar el reporte');
+        }
+
+        const blob = await response.blob();
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        // El nombre del archivo viene en el header Content-Disposition, pero podemos usar uno genérico o derivado
+        a.download = `Reporte_Evaluacion_${currentEvaluation.nombre_archivo || 'Ensayo'}.pdf`;
+        document.body.appendChild(a);
+        a.click();
+        window.URL.revokeObjectURL(url);
+        document.body.removeChild(a);
+
+        // Restaurar botón
+        downloadReportBtn.innerHTML = originalContent;
+
+    } catch (err) {
+        console.error('Error al descargar el reporte:', err);
+        alert('No se pudo descargar el reporte. Por favor intente nuevamente.');
+        downloadReportBtn.textContent = 'Error';
+    } finally {
+        downloadReportBtn.disabled = false;
+        if (downloadReportBtn.textContent === 'Error') {
+            setTimeout(() => {
+                downloadReportBtn.innerHTML = `
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                    </svg>
+                    Descargar
+                `;
+            }, 2000);
+        }
+    }
 });
-saveScoreBtn.addEventListener('click', saveTotalScore);
-editGeneralCommentBtn.addEventListener('click', toggleGeneralCommentEdit);
+
+const totalScoreElement = document.getElementById('totalScore');
+if (totalScoreElement) totalScoreElement.addEventListener('click', openScoreEditor);
+if (closeScoreEditor) closeScoreEditor.addEventListener('click', () => {
+    if (scoreEditor) scoreEditor.style.display = 'none';
+});
+if (saveScoreBtn) saveScoreBtn.addEventListener('click', saveTotalScore);
+if (editGeneralCommentBtn) editGeneralCommentBtn.addEventListener('click', toggleGeneralCommentEdit);
 
 // History and comparison event listeners
 if (viewHistoryBtn) viewHistoryBtn.addEventListener('click', showEssaysHistory);
@@ -292,7 +364,6 @@ if (closeHistoryBtn) closeHistoryBtn.addEventListener('click', hideEssaysHistory
 if (compareSelectedBtn) compareSelectedBtn.addEventListener('click', compareEssays);
 if (closeComparisonBtn) closeComparisonBtn.addEventListener('click', hideComparison);
 if (compareLibraryBtn) compareLibraryBtn.addEventListener('click', compareEssays);
-if (uploadNewBtn) uploadNewBtn.addEventListener('click', showUploadSection);
 
 // Back button event listeners
 const backFromUploadBtn = document.getElementById('backFromUploadBtn');
@@ -300,10 +371,36 @@ const backFromResultsBtn = document.getElementById('backFromResultsBtn');
 const backFromHistoryBtn = document.getElementById('backFromHistoryBtn');
 const backFromComparisonBtn = document.getElementById('backFromComparisonBtn');
 
-if (backFromUploadBtn) backFromUploadBtn.addEventListener('click', returnToLibrary);
-if (backFromResultsBtn) backFromResultsBtn.addEventListener('click', returnToLibrary);
-if (backFromHistoryBtn) backFromHistoryBtn.addEventListener('click', returnToLibrary);
-if (backFromComparisonBtn) backFromComparisonBtn.addEventListener('click', returnToLibrary);
+// Función unificada para volver a la biblioteca
+function showLibrary() {
+    if (uploadSection) uploadSection.style.display = 'none';
+    if (processingSection) processingSection.style.display = 'none';
+    if (resultsSection) resultsSection.style.display = 'none';
+    if (essaysHistorySection) essaysHistorySection.style.display = 'none';
+    if (comparisonSection) comparisonSection.style.display = 'none';
+    if (judgeEvaluationSection) judgeEvaluationSection.style.display = 'none';
+    
+    // Ocultar gestión de criterios si existe
+    const criteriaSection = document.getElementById('criteriaManagementSection');
+    if (criteriaSection) criteriaSection.style.display = 'none';
+    
+    // Mostrar biblioteca (mainContent en la solicitud del usuario)
+    if (essaysLibrarySection) {
+        essaysLibrarySection.style.display = 'block';
+        loadEssaysLibrary(); // Recargar datos
+    }
+    
+    document.body.style.overflow = '';
+}
+
+// Mantener returnToLibrary como alias para compatibilidad
+const returnToLibrary = showLibrary;
+
+if (backFromUploadBtn) backFromUploadBtn.addEventListener('click', showLibrary);
+if (backFromResultsBtn) backFromResultsBtn.addEventListener('click', showLibrary);
+if (backFromHistoryBtn) backFromHistoryBtn.addEventListener('click', showLibrary);
+if (backFromComparisonBtn) backFromComparisonBtn.addEventListener('click', showLibrary);
+if (closeHistoryBtn) closeHistoryBtn.addEventListener('click', showLibrary);
 
 // Navigation tabs event listeners
 if (navTabIA) navTabIA.addEventListener('click', () => switchToTab('library'));
@@ -336,17 +433,12 @@ if (downloadExcelBtn) downloadExcelBtn.addEventListener('click', downloadExcel);
 const showStatsBtn = document.getElementById('showStatsBtn');
 if (showStatsBtn) showStatsBtn.addEventListener('click', showStatsDashboard);
 
-// Botón de cerrar PDF
-const closePdfBtn = document.getElementById('closePdfBtn');
-if (closePdfBtn) closePdfBtn.addEventListener('click', () => {
-    const pdfViewerContainer = document.getElementById('pdfViewerContainer');
-    if (pdfViewerContainer) {
-        pdfViewerContainer.style.display = 'none';
-    }
-});
+// Botón de cerrar PDF eliminado
+// const closePdfBtn = document.getElementById('closePdfBtn');
+// if (closePdfBtn) ...
 
-// Cargar biblioteca al iniciar
-window.addEventListener('DOMContentLoaded', loadEssaysLibrary);
+// Cargar biblioteca al iniciar (ya se carga en DOMContentLoaded de autenticación)
+// window.addEventListener('DOMContentLoaded', loadEssaysLibrary);
 
 // Edit criterion buttons
 document.addEventListener('click', (e) => {
@@ -357,29 +449,31 @@ document.addEventListener('click', (e) => {
     }
 });
 
-// Drag and Drop
-dropZone.addEventListener('click', () => fileInput.click());
+// Drag and Drop - con verificación null
+if (dropZone) {
+    dropZone.addEventListener('click', () => fileInput?.click());
 
-dropZone.addEventListener('dragover', (e) => {
-    e.preventDefault();
-    dropZone.classList.add('drag-over');
-});
+    dropZone.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        dropZone.classList.add('drag-over');
+    });
 
-dropZone.addEventListener('dragleave', () => {
-    dropZone.classList.remove('drag-over');
-});
+    dropZone.addEventListener('dragleave', () => {
+        dropZone.classList.remove('drag-over');
+    });
 
-dropZone.addEventListener('drop', (e) => {
-    e.preventDefault();
-    dropZone.classList.remove('drag-over');
-    
-    const files = e.dataTransfer.files;
-    if (files.length > 0 && files[0].type === 'application/pdf') {
-        handleFile(files[0]);
-    } else {
-        alert('Por favor, selecciona un archivo PDF válido.');
-    }
-});
+    dropZone.addEventListener('drop', (e) => {
+        e.preventDefault();
+        dropZone.classList.remove('drag-over');
+        
+        const files = e.dataTransfer.files;
+        if (files.length > 0 && files[0].type === 'application/pdf') {
+            handleFile(files[0]);
+        } else {
+            alert('Por favor, selecciona un archivo PDF válido.');
+        }
+    });
+}
 
 // Manejo de archivos
 function handleFileSelect(e) {
@@ -394,11 +488,11 @@ function handleFileSelect(e) {
 function handleFile(file) {
     selectedFile = file;
     currentFileName = file.name.replace('.pdf', '');  // Guardar nombre sin extensión
-    fileName.textContent = file.name;
-    fileSize.textContent = formatFileSize(file.size);
+    if (fileName) fileName.textContent = file.name;
+    if (fileSize) fileSize.textContent = formatFileSize(file.size);
     
-    dropZone.style.display = 'none';
-    fileInfo.style.display = 'flex';
+    if (dropZone) dropZone.style.display = 'none';
+    if (fileInfo) fileInfo.style.display = 'flex';
 }
 
 function formatFileSize(bytes) {
@@ -513,7 +607,8 @@ async function evaluateEssay() {
 function displayResults(evaluation) {
     // Ocultar procesamiento y mostrar resultados
     processingSection.style.display = 'none';
-    resultsSection.style.display = 'block';
+    resultsSection.style.display = 'flex';
+    document.body.style.overflow = 'hidden';
 
     // Mostrar título del ensayo
     const essayTitle = document.getElementById('essayTitle');
@@ -669,29 +764,34 @@ function displayFragments(containerId, fragments) {
 // Reiniciar evaluación
 function resetEvaluation() {
     selectedFile = null;
-    fileInput.value = '';
+    if (fileInput) fileInput.value = '';
     currentEvaluation = null;
     currentEssayText = null;
     currentFileName = '';
     
     // Volver a mostrar la biblioteca
-    essaysLibrarySection.style.display = 'block';
-    uploadSection.style.display = 'none';
-    dropZone.style.display = 'block';
-    fileInfo.style.display = 'none';
-    processingSection.style.display = 'none';
-    resultsSection.style.display = 'none';
+    if (essaysLibrarySection) essaysLibrarySection.style.display = 'block';
+    if (uploadSection) uploadSection.style.display = 'none';
+    if (dropZone) dropZone.style.display = 'block';
+    if (fileInfo) fileInfo.style.display = 'none';
+    if (processingSection) processingSection.style.display = 'none';
+    if (resultsSection) resultsSection.style.display = 'none';
+    document.body.style.overflow = '';
     
     // Recargar biblioteca
     loadEssaysLibrary();
     
     // Limpiar resultados
-    document.getElementById('totalScore').textContent = '0.00';
-    document.getElementById('scoreFill').style.width = '0%';
+    const totalScoreEl = document.getElementById('totalScore');
+    const scoreFillEl = document.getElementById('scoreFill');
+    if (totalScoreEl) totalScoreEl.textContent = '0.00';
+    if (scoreFillEl) scoreFillEl.style.width = '0%';
     
     for (let i = 1; i <= 6; i++) {
-        document.getElementById(`score${i}`).textContent = '-';
-        document.getElementById(`comment${i}`).textContent = '';
+        const scoreEl = document.getElementById(`score${i}`);
+        const commentEl = document.getElementById(`comment${i}`);
+        if (scoreEl) scoreEl.textContent = '-';
+        if (commentEl) commentEl.textContent = '';
     }
     
     // Ocultar advertencia de anexo
@@ -700,8 +800,10 @@ function resetEvaluation() {
         anexoWarning.style.display = 'none';
     }
     
-    document.getElementById('generalComment').style.display = 'none';
-    document.getElementById('generalCommentText').textContent = '';
+    const generalCommentEl = document.getElementById('generalComment');
+    const generalCommentTextEl = document.getElementById('generalCommentText');
+    if (generalCommentEl) generalCommentEl.style.display = 'none';
+    if (generalCommentTextEl) generalCommentTextEl.textContent = '';
     
     // Deshabilitar y limpiar chat
     disableChat();
@@ -710,10 +812,7 @@ function resetEvaluation() {
     window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
-// Chat functionality - Nuevo sistema flotante
-function toggleChat() {
-    chatPanel.classList.toggle('active');
-}
+// Función toggleChat eliminada (reemplazada arriba)
 
 function enableChat() {
     chatInput.disabled = false;
@@ -753,13 +852,18 @@ function addChatMessage(role, content) {
     const contentDiv = document.createElement('div');
     contentDiv.className = 'message-content';
     
-    // Parsear saltos de línea
-    const paragraphs = content.split('\n').filter(p => p.trim());
-    paragraphs.forEach(p => {
-        const para = document.createElement('p');
-        para.textContent = p;
-        contentDiv.appendChild(para);
-    });
+    // Renderizar Markdown si está disponible
+    if (window.marked) {
+        contentDiv.innerHTML = marked.parse(content);
+    } else {
+        // Fallback para texto plano
+        const paragraphs = content.split('\n').filter(p => p.trim());
+        paragraphs.forEach(p => {
+            const para = document.createElement('p');
+            para.textContent = p;
+            contentDiv.appendChild(para);
+        });
+    }
     
     messageDiv.appendChild(avatar);
     messageDiv.appendChild(contentDiv);
@@ -767,6 +871,44 @@ function addChatMessage(role, content) {
     
     // Scroll al último mensaje
     chatMessages.scrollTop = chatMessages.scrollHeight;
+    
+    return messageDiv; // Retornar el elemento para poder manipularlo
+}
+
+function showTypingIndicator() {
+    const messageDiv = document.createElement('div');
+    messageDiv.className = 'chat-message assistant typing-message';
+    messageDiv.id = 'typingIndicator';
+    
+    const avatar = document.createElement('div');
+    avatar.className = 'message-avatar';
+    avatar.textContent = 'IA';
+    
+    const contentDiv = document.createElement('div');
+    contentDiv.className = 'message-content';
+    
+    const typingDiv = document.createElement('div');
+    typingDiv.className = 'typing-indicator';
+    typingDiv.innerHTML = `
+        <div class="typing-dot"></div>
+        <div class="typing-dot"></div>
+        <div class="typing-dot"></div>
+    `;
+    
+    contentDiv.appendChild(typingDiv);
+    messageDiv.appendChild(avatar);
+    messageDiv.appendChild(contentDiv);
+    chatMessages.appendChild(messageDiv);
+    
+    // Scroll al fondo para mostrar la animación
+    chatMessages.scrollTop = chatMessages.scrollHeight;
+}
+
+function removeTypingIndicator() {
+    const indicator = document.getElementById('typingIndicator');
+    if (indicator) {
+        indicator.remove();
+    }
 }
 
 async function sendChatMessage() {
@@ -795,9 +937,10 @@ async function sendChatMessage() {
     addChatMessage('user', message);
     chatInput.value = '';
     
-    // Mostrar estado de carga
+    // Mostrar estado de carga (indicador de escritura)
     chatSendBtn.disabled = true;
-    chatStatus.style.display = 'flex';
+    // chatStatus.style.display = 'flex'; // Ya no usamos el footer status
+    showTypingIndicator();
     
     try {
         const response = await authenticatedFetch('/api/chat', {
@@ -817,16 +960,26 @@ async function sendChatMessage() {
         
         const result = await response.json();
         
-        // Agregar respuesta del asistente
-        addChatMessage('assistant', result.response);
+        // Quitar indicador de escritura
+        removeTypingIndicator();
+        
+        // Agregar respuesta del asistente y obtener el elemento
+        const botMessageElement = addChatMessage('assistant', result.response);
+        
+        // Scroll al inicio del mensaje del bot
+        // Usamos un pequeño timeout para asegurar que el DOM se actualizó
+        setTimeout(() => {
+            botMessageElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }, 50);
         
     } catch (error) {
         console.error('Error:', error);
+        removeTypingIndicator();
         addChatMessage('assistant', 
             'Disculpe, ha ocurrido un error al procesar su consulta. Por favor, intente nuevamente.'
         );
     } finally {
-        chatStatus.style.display = 'none';
+        // chatStatus.style.display = 'none';
         chatSendBtn.disabled = false;
         chatInput.focus();
     }
@@ -947,198 +1100,8 @@ function updateEvaluationFromDOM() {
     }
 }
 
-function downloadReport() {
-    if (!currentEvaluation) {
-        alert('No hay reporte disponible para descargar.');
-        return;
-    }
-    
-    // Actualizar evaluación desde el DOM
-    updateEvaluationFromDOM();
-    
-    // Función helper para limpiar texto y evitar problemas de codificación
-    const cleanTextForPDF = (text) => {
-        if (!text) return '';
-        return text
-            .normalize('NFD') // Descomponer caracteres acentuados
-            .replace(/[\u0300-\u036f]/g, '') // Eliminar marcas diacríticas
-            .replace(/[^\x00-\x7F]/g, '') // Eliminar caracteres no ASCII restantes
-            .replace(/\s+/g, ' ') // Normalizar espacios
-            .trim();
-    };
-    
-    // Crear el PDF con jsPDF
-    const { jsPDF } = window.jspdf;
-    const doc = new jsPDF('p', 'mm', 'a4');
-    
-    const pageWidth = doc.internal.pageSize.getWidth();
-    const pageHeight = doc.internal.pageSize.getHeight();
-    const margin = 20;
-    const maxWidth = pageWidth - (2 * margin);
-    let yPos = margin;
-    
-    // Función para agregar nueva página si es necesario
-    const checkPageBreak = (neededSpace) => {
-        if (yPos + neededSpace > pageHeight - margin) {
-            doc.addPage();
-            yPos = margin;
-            return true;
-        }
-        return false;
-    };
-    
-    // Función para texto con wrap
-    const addText = (text, fontSize, isBold = false, color = [0, 0, 0]) => {
-        const cleanText = cleanTextForPDF(text);
-        
-        doc.setFontSize(fontSize);
-        doc.setFont('helvetica', isBold ? 'bold' : 'normal');
-        doc.setTextColor(...color);
-        const lines = doc.splitTextToSize(cleanText, maxWidth);
-        
-        lines.forEach((line) => {
-            checkPageBreak(fontSize * 0.5 + 2);
-            doc.text(line, margin, yPos);
-            yPos += fontSize * 0.5;
-        });
-        yPos += 3;
-    };
-    
-    // Encabezado
-    doc.setFillColor(41, 52, 109);
-    doc.rect(0, 0, pageWidth, 40, 'F');
-    doc.setTextColor(255, 255, 255);
-    doc.setFontSize(22);
-    doc.setFont('helvetica', 'bold');
-    doc.text('Reporte de Evaluacion de Ensayo', pageWidth / 2, 20, { align: 'center' });
-    
-    doc.setFontSize(10);
-    doc.setFont('helvetica', 'normal');
-    const date = new Date().toLocaleDateString('es-MX', {
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit'
-    });
-    doc.text(`Generado el ${date}`, pageWidth / 2, 30, { align: 'center' });
-    
-    yPos = 50;
-    
-    // Nombre del archivo con wrap para evitar recorte
-    doc.setTextColor(0, 0, 0);
-    doc.setFontSize(12);
-    doc.setFont('helvetica', 'bold');
-    const essayTitleText = `Ensayo: ${currentFileName || 'Sin nombre'}`;
-    const titleLines = doc.splitTextToSize(cleanTextForPDF(essayTitleText), maxWidth);
-    titleLines.forEach((line) => {
-        doc.text(line, margin, yPos);
-        yPos += 6;
-    });
-    yPos += 4;
-    
-    // Puntuación total con fondo
-    checkPageBreak(30);
-    doc.setFillColor(221, 218, 54);
-    doc.roundedRect(margin, yPos, maxWidth, 25, 3, 3, 'F');
-    doc.setFontSize(16);
-    doc.setFont('helvetica', 'bold');
-    doc.setTextColor(41, 52, 109);
-    doc.text('Puntuacion Total', pageWidth / 2, yPos + 8, { align: 'center' });
-    doc.setFontSize(28);
-    doc.text(`${currentEvaluation.puntuacion_total.toFixed(2)}/5.00`, pageWidth / 2, yPos + 20, { align: 'center' });
-    yPos += 35;
-    
-    // Criterios de evaluación (sin emojis para mejor compatibilidad PDF)
-    const criterios = [
-        { nombre: 'Calidad Tecnica y Rigor Academico', data: currentEvaluation.calidad_tecnica, peso: '25%' },
-        { nombre: 'Creatividad y Originalidad', data: currentEvaluation.creatividad, peso: '20%' },
-        { nombre: 'Vinculacion con Ejes Tematicos', data: currentEvaluation.vinculacion_tematica, peso: '15%' },
-        { nombre: 'Bienestar Colectivo', data: currentEvaluation.bienestar_colectivo, peso: '20%' },
-        { nombre: 'Potencial de Impacto', data: currentEvaluation.potencial_impacto, peso: '20%' }
-    ];
-    
-    criterios.forEach((criterio, index) => {
-        checkPageBreak(40);
-        
-        // Línea separadora
-        if (index > 0) {
-            doc.setDrawColor(200, 200, 200);
-            doc.line(margin, yPos, pageWidth - margin, yPos);
-            yPos += 8;
-        }
-        
-        // Título del criterio
-        doc.setFontSize(14);
-        doc.setFont('helvetica', 'bold');
-        doc.setTextColor(41, 52, 109);
-        doc.text(cleanTextForPDF(criterio.nombre), margin, yPos);
-        
-        // Peso y calificación
-        doc.setFontSize(12);
-        doc.setTextColor(100, 100, 100);
-        doc.text(`Peso: ${criterio.peso}`, pageWidth - margin - 30, yPos, { align: 'right' });
-        
-        doc.setFontSize(16);
-        doc.setFont('helvetica', 'bold');
-        doc.setTextColor(221, 218, 54);
-        doc.text(`${criterio.data.calificacion}/5`, pageWidth - margin, yPos, { align: 'right' });
-        yPos += 8;
-        
-        // Comentario
-        doc.setFontSize(10);
-        doc.setFont('helvetica', 'normal');
-        doc.setTextColor(60, 60, 60);
-        const comentarioLines = doc.splitTextToSize(cleanTextForPDF(criterio.data.comentario), maxWidth);
-        comentarioLines.forEach(line => {
-            checkPageBreak(5);
-            doc.text(line, margin, yPos);
-            yPos += 5;
-        });
-        yPos += 5;
-    });
-    
-    // Comentario general
-    if (currentEvaluation.comentario_general) {
-        checkPageBreak(30);
-        doc.setDrawColor(221, 218, 54);
-        doc.setLineWidth(0.5);
-        doc.line(margin, yPos, pageWidth - margin, yPos);
-        yPos += 8;
-        
-        doc.setFontSize(14);
-        doc.setFont('helvetica', 'bold');
-        doc.setTextColor(41, 52, 109);
-        doc.text('Comentario General', margin, yPos);
-        yPos += 8;
-        
-        doc.setFontSize(10);
-        doc.setFont('helvetica', 'normal');
-        doc.setTextColor(60, 60, 60);
-        const generalLines = doc.splitTextToSize(cleanTextForPDF(currentEvaluation.comentario_general), maxWidth);
-        generalLines.forEach(line => {
-            checkPageBreak(5);
-            doc.text(line, margin, yPos);
-            yPos += 5;
-        });
-    }
-    
-    // Pie de página en todas las páginas
-    const pageCount = doc.internal.getNumberOfPages();
-    for (let i = 1; i <= pageCount; i++) {
-        doc.setPage(i);
-        doc.setFontSize(8);
-        doc.setTextColor(150, 150, 150);
-        doc.setFont('helvetica', 'normal');
-        doc.text('Sistema de Evaluacion de Ensayos con IA', pageWidth / 2, pageHeight - 10, { align: 'center' });
-        doc.text(`Pagina ${i} de ${pageCount}`, pageWidth - margin, pageHeight - 10, { align: 'right' });
-    }
-    
-    // Descargar con el nombre del archivo
-    const cleanFileName = cleanTextForPDF(currentFileName || 'Sin_nombre');
-    const pdfFileName = `Evaluacion_${cleanFileName}.pdf`.replace(/\s+/g, '_');
-    doc.save(pdfFileName);
-}
+// Función downloadReport reemplazada por listener directo con html2canvas
+// function downloadReport() { ... } eliminado
 
 // Funciones para historial y comparación
 async function showEssaysHistory() {
@@ -1146,6 +1109,7 @@ async function showEssaysHistory() {
     essaysLibrarySection.style.display = 'none';
     uploadSection.style.display = 'none';
     resultsSection.style.display = 'none';
+    document.body.style.overflow = '';
     comparisonSection.style.display = 'none';
     judgeEvaluationSection.style.display = 'none';
     
@@ -1329,6 +1293,7 @@ function hideComparison() {
     essaysLibrarySection.style.display = 'block';
     uploadSection.style.display = 'none';
     resultsSection.style.display = 'none';
+    document.body.style.overflow = '';
 }
 
 // Funciones para la biblioteca de ensayos
@@ -1501,7 +1466,8 @@ async function viewEssayDetails(essayId) {
         // Ocultar biblioteca y mostrar resultados
         essaysLibrarySection.style.display = 'none';
         uploadSection.style.display = 'none';
-        resultsSection.style.display = 'block';
+        resultsSection.style.display = 'flex';
+        document.body.style.overflow = 'hidden';
         
         // Habilitar chat
         enableChat();
@@ -1582,6 +1548,7 @@ function showUploadSection() {
     // Ocultar todas las secciones
     essaysLibrarySection.style.display = 'none';
     resultsSection.style.display = 'none';
+    document.body.style.overflow = '';
     processingSection.style.display = 'none';
     judgeEvaluationSection.style.display = 'none';
     essaysHistorySection.style.display = 'none';
@@ -1603,24 +1570,7 @@ function showUploadSection() {
     window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
-function returnToLibrary() {
-    // Hide all sections
-    uploadSection.style.display = 'none';
-    resultsSection.style.display = 'none';
-    essaysHistorySection.style.display = 'none';
-    comparisonSection.style.display = 'none';
-    judgeEvaluationSection.style.display = 'none';
-    
-    // Ocultar gestión de criterios si existe
-    const criteriaSection = document.getElementById('criteriaManagementSection');
-    if (criteriaSection) criteriaSection.style.display = 'none';
-    
-    // Show library
-    essaysLibrarySection.style.display = 'block';
-    
-    // Reload library to refresh data
-    loadEssaysLibrary();
-}
+// Función returnToLibrary eliminada (reemplazada por showLibrary)
 
 function updateChatbotContext() {
     // Esta función actualiza el contexto del chatbot según los ensayos seleccionados
@@ -1709,6 +1659,8 @@ async function downloadExcel() {
         const response = await authenticatedFetch('/api/essays/export/excel');
         
         if (!response.ok) {
+            const errorText = await response.text();
+            console.error('Error response:', errorText);
             throw new Error('Error al generar el archivo Excel');
         }
         
@@ -2031,19 +1983,7 @@ function switchToTab(section) {
     console.log('✅ Tab switch complete');
 }
 
-// Mostrar sección de evaluación manual
-// NOTA: Esta función está definida en grading-cockpit.js
-// async function showJudgeEvaluation() {
-//     essaysLibrarySection.style.display = 'none';
-//     uploadSection.style.display = 'none';
-//     resultsSection.style.display = 'none';
-//     criteriaSectionDiv.style.display = 'none';
-//     judgeEvaluationSection.style.display = 'block';
-//     
-//     // Cargar criterios y ensayos en la cola
-//     await loadJudgeCriteria();
-//     await loadEssaysQueue();  // Nueva función para cargar cola
-// }
+
 
 // Nueva función: Cargar ensayos en la cola de evaluación
 async function loadEssaysQueue() {

@@ -104,9 +104,9 @@ if __name__ == '__main__':
     debug = env == 'development'
     port = int(os.getenv('PORT', 5001))
     
-    print(f"\n🚀 Servidor iniciado en modo: {env}")
-    print(f"📍 URL: http://localhost:{port}")
-    print(f"🔧 Debug: {debug}\n")
+    print(f"\nServidor iniciado en modo: {env}")
+    print(f"URL: http://localhost:{port}")
+    print(f"Debug: {debug}\n")
     
     app.run(
         host='0.0.0.0',

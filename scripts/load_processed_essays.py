@@ -31,7 +31,7 @@ def setup_app():
     
     with app.app_context():
         db.create_all()
-        print(f"✅ Base de datos configurada en: {db_path}")
+        print(f"Base de datos configurada en: {db_path}")
     
     return app
 
@@ -95,7 +95,7 @@ def find_matching_anexo(essay_filename: str, anexos_folder: Path) -> tuple:
             ruta_anexo = str(anexos_folder / anexo_filename)
             return (ruta_anexo, texto_anexo)
         else:
-            print(f"   ⚠️ Anexo definido pero archivo no encontrado: {anexo_filename}")
+            print(f"   WARN: Anexo definido pero archivo no encontrado: {anexo_filename}")
     
     return (None, None)
 
@@ -107,12 +107,12 @@ def load_all_anexos(anexos_folder: Path) -> dict:
     anexos_dict = {}
     
     if not anexos_folder.exists():
-        print(f"⚠️ Carpeta de anexos no encontrada: {anexos_folder}")
+        print(f"WARN: Carpeta de anexos no encontrada: {anexos_folder}")
         return anexos_dict
     
     txt_files = list(anexos_folder.glob('*.txt'))
     
-    print(f"📄 Cargando {len(txt_files)} anexos...")
+    print(f"Cargando {len(txt_files)} anexos...")
     
     for txt_file in txt_files:
         try:
@@ -121,9 +121,9 @@ def load_all_anexos(anexos_folder: Path) -> dict:
                 if texto:
                     anexos_dict[txt_file] = texto
         except Exception as e:
-            print(f"❌ Error leyendo anexo {txt_file.name}: {e}")
+            print(f"ERROR: Leyendo anexo {txt_file.name}: {e}")
     
-    print(f"✅ Cargados {len(anexos_dict)} anexos")
+    print(f"Cargados {len(anexos_dict)} anexos")
     return anexos_dict
 
 def process_all_essays():
@@ -141,20 +141,20 @@ def process_all_essays():
     anexos_folder = Path(__file__).parent.parent / 'data' / 'anexos'
     
     if not pdfs_folder.exists():
-        print(f"❌ Carpeta no encontrada: {pdfs_folder}")
+        print(f"ERROR: Carpeta no encontrada: {pdfs_folder}")
         return
     
     # Mostrar estadísticas de matches
-    print(f"\n📎 Matches definidos en MATCHES_SEGUROS_IA: {len(MATCHES_SEGUROS_IA)}")
+    print(f"\nMatches definidos en MATCHES_SEGUROS_IA: {len(MATCHES_SEGUROS_IA)}")
     
     # Obtener todos los archivos .txt de ensayos
     txt_files = list(pdfs_folder.glob('Ensayo_*.txt'))
     
     if not txt_files:
-        print(f"❌ No se encontraron archivos .txt en {pdfs_folder}")
+        print(f"ERROR: No se encontraron archivos .txt en {pdfs_folder}")
         return
     
-    print(f"\n📚 Encontrados {len(txt_files)} ensayos para procesar")
+    print(f"\nEncontrados {len(txt_files)} ensayos para procesar")
     print("=" * 80)
     
     processed = 0
@@ -171,7 +171,7 @@ def process_all_essays():
                     texto_ensayo = f.read().strip()
                 
                 if not texto_ensayo:
-                    print(f"\n⚠️ Ensayo vacío: {txt_file.name}")
+                    print(f"\nWARN: Ensayo vacio: {txt_file.name}")
                     skipped += 1
                     continue
                 
@@ -187,12 +187,12 @@ def process_all_essays():
                 
                 existing = Ensayo.query.filter_by(texto_hash=texto_hash).first()
                 if existing:
-                    print(f"\n⏭️ Ensayo ya existe en BD: {txt_file.name}")
+                    print(f"\nSKIP: Ensayo ya existe en BD: {txt_file.name}")
                     skipped += 1
                     continue
                 
                 # Evaluar el ensayo con el agente de IA
-                print(f"\n🤖 Evaluando: {author}")
+                print(f"\nEvaluando: {author}")
                 try:
                     evaluacion = evaluador.evaluar(
                         ensayo=texto_ensayo,
@@ -226,29 +226,29 @@ def process_all_essays():
                     db.session.add(nuevo_ensayo)
                     db.session.commit()
                     
-                    print(f"✅ {author} - Puntuación: {puntuacion:.2f}/5.00")
+                    print(f"{author} - Puntuacion: {puntuacion:.2f}/5.00")
                     if ruta_anexo:
-                        print(f"   📎 Anexo encontrado: {Path(ruta_anexo).name}")
+                        print(f"   Anexo encontrado: {Path(ruta_anexo).name}")
                         con_anexo += 1
                     else:
-                        print(f"   ⚠️ Sin anexo")
+                        print(f"   WARN: Sin anexo")
                         sin_anexo += 1
                     
                     processed += 1
                     
                 except KeyboardInterrupt:
-                    print(f"\n\n⚠️ Proceso interrumpido por el usuario")
-                    print(f"📊 Procesados hasta ahora: {processed}")
+                    print(f"\n\nWARN: Proceso interrumpido por el usuario")
+                    print(f"Procesados hasta ahora: {processed}")
                     db.session.rollback()
                     raise
                 except Exception as eval_error:
-                    print(f"❌ Error evaluando: {eval_error}")
+                    print(f"ERROR: Evaluando: {eval_error}")
                     errors += 1
                     db.session.rollback()
                     continue
                 
             except Exception as e:
-                print(f"\n❌ Error procesando {txt_file.name}: {e}")
+                print(f"\nERROR: Procesando {txt_file.name}: {e}")
                 import traceback
                 traceback.print_exc()
                 errors += 1
@@ -256,31 +256,31 @@ def process_all_essays():
     
     # Resumen final
     print("\n" + "=" * 80)
-    print("📊 RESUMEN DEL PROCESAMIENTO")
+    print("RESUMEN DEL PROCESAMIENTO")
     print("=" * 80)
-    print(f"✅ Procesados exitosamente: {processed}")
-    print(f"   📎 Con anexo: {con_anexo}")
-    print(f"   ⚠️ Sin anexo: {sin_anexo}")
-    print(f"⏭️ Omitidos (duplicados/vacíos): {skipped}")
-    print(f"❌ Errores: {errors}")
-    print(f"📚 Total de archivos: {len(txt_files)}")
+    print(f"Procesados exitosamente: {processed}")
+    print(f"   Con anexo: {con_anexo}")
+    print(f"   Sin anexo: {sin_anexo}")
+    print(f"Omitidos (duplicados/vacios): {skipped}")
+    print(f"Errores: {errors}")
+    print(f"Total de archivos: {len(txt_files)}")
     print("=" * 80)
     
     if processed > 0:
-        print("\n🎉 ¡Ensayos cargados en la base de datos!")
-        print(f"💾 Base de datos: {Path(__file__).parent / 'essays.db'}")
-        print("\n🌐 Puedes iniciar el servidor web con: python main.py")
+        print("\nEnsayos cargados en la base de datos!")
+        print(f"Base de datos: {Path(__file__).parent / 'essays.db'}")
+        print("\nPuedes iniciar el servidor web con: python main.py")
 
 if __name__ == "__main__":
     print("=" * 80)
-    print("🚀 CARGA DE ENSAYOS PROCESADOS A BASE DE DATOS")
+    print("CARGA DE ENSAYOS PROCESADOS A BASE DE DATOS")
     print("=" * 80)
-    print("\nEste script procesará todos los ensayos en pdfs_procesado/")
-    print("y los evaluará con el agente de IA para guardarlos en la BD.\n")
+    print("\nEste script procesara todos los ensayos en pdfs_procesado/")
+    print("y los evaluara con el agente de IA para guardarlos en la BD.\n")
     
     respuesta = input("¿Deseas continuar? (s/n): ")
     
     if respuesta.lower() in ['s', 'si', 'sí', 'y', 'yes']:
         process_all_essays()
     else:
-        print("❌ Operación cancelada")
+        print("Operacion cancelada")

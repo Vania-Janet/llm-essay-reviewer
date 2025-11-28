@@ -42,46 +42,46 @@ def create_app():
 def print_help():
     """Mostrar ayuda de comandos."""
     print("""
-╔══════════════════════════════════════════════════════════════╗
-║           GESTIÓN DE BASE DE DATOS - Flask-Migrate           ║
-╚══════════════════════════════════════════════════════════════╝
+======================================================================
+           GESTION DE BASE DE DATOS - Flask-Migrate           
+======================================================================
 
-📋 Comandos disponibles:
+Comandos disponibles:
 
   init              Inicializar sistema de migraciones (solo primera vez)
-  migrate [mensaje] Crear nueva migración automática
+  migrate [mensaje] Crear nueva migracion automatica
   upgrade           Aplicar todas las migraciones pendientes
-  downgrade         Revertir la última migración
+  downgrade         Revertir la ultima migracion
   history           Ver historial de migraciones
-  current           Ver versión actual de la base de datos
+  current           Ver version actual de la base de datos
   help              Mostrar esta ayuda
 
-📝 Ejemplos:
+Ejemplos:
 
   # Primera vez - Inicializar sistema
   python manage.py init
 
-  # Después de modificar models en database.py
+  # Despues de modificar models en database.py
   python manage.py migrate "Agregar campo fecha_modificacion"
 
   # Aplicar cambios a la base de datos
   python manage.py upgrade
 
-  # Ver qué versión tienes
+  # Ver que version tienes
   python manage.py current
 
-  # Revertir último cambio
+  # Revertir ultimo cambio
   python manage.py downgrade
 
-🔧 Flujo de trabajo típico:
+Flujo de trabajo tipico:
 
   1. Modificar modelos en database.py
-  2. python manage.py migrate "Descripción del cambio"
+  2. python manage.py migrate "Descripcion del cambio"
   3. python manage.py upgrade
-  4. ✅ Listo!
+  4. Listo!
 
-⚠️  NOTA: Las migraciones se guardan en /migrations/versions/
-           Incluirlas en Git para compartir con el equipo.
+NOTA: Las migraciones se guardan en /migrations/versions/
+      Incluirlas en Git para compartir con el equipo.
     """)
 
 if __name__ == '__main__':
@@ -95,49 +95,49 @@ if __name__ == '__main__':
     with app.app_context():
         try:
             if command == 'init':
-                print("🔧 Inicializando sistema de migraciones...")
+                print("Inicializando sistema de migraciones...")
                 from flask_migrate import init as flask_init
                 flask_init()
-                print("✅ Sistema de migraciones inicializado en /migrations/")
-                print("💡 Ahora ejecuta: python manage.py migrate 'Initial migration'")
+                print("Sistema de migraciones inicializado en /migrations/")
+                print("Ahora ejecuta: python manage.py migrate 'Initial migration'")
                 
             elif command == 'migrate':
                 mensaje = sys.argv[2] if len(sys.argv) > 2 else 'Auto migration'
-                print(f"📝 Creando migración: {mensaje}")
+                print(f"Creando migracion: {mensaje}")
                 from flask_migrate import migrate as flask_migrate
                 flask_migrate(message=mensaje)
-                print("✅ Migración creada exitosamente")
-                print("💡 Ahora ejecuta: python manage.py upgrade")
+                print("Migracion creada exitosamente")
+                print("Ahora ejecuta: python manage.py upgrade")
                 
             elif command == 'upgrade':
-                print("⬆️  Aplicando migraciones...")
+                print("Aplicando migraciones...")
                 from flask_migrate import upgrade as flask_upgrade
                 flask_upgrade()
-                print("✅ Base de datos actualizada")
+                print("Base de datos actualizada")
                 
             elif command == 'downgrade':
-                print("⬇️  Revirtiendo última migración...")
+                print("Revirtiendo ultima migracion...")
                 from flask_migrate import downgrade as flask_downgrade
                 flask_downgrade()
-                print("✅ Migración revertida")
+                print("Migracion revertida")
                 
             elif command == 'current':
-                print("📍 Versión actual de la base de datos:")
+                print("Version actual de la base de datos:")
                 from flask_migrate import current as flask_current
                 flask_current()
                 
             elif command == 'history':
-                print("📜 Historial de migraciones:")
+                print("Historial de migraciones:")
                 from flask_migrate import history as flask_history
                 flask_history()
                 
             else:
-                print(f"❌ Comando desconocido: {command}")
-                print("💡 Usa 'python manage.py help' para ver comandos disponibles")
+                print(f"ERROR: Comando desconocido: {command}")
+                print("Usa 'python manage.py help' para ver comandos disponibles")
                 sys.exit(1)
                 
         except Exception as e:
-            print(f"❌ Error: {e}")
+            print(f"ERROR: {e}")
             import traceback
             traceback.print_exc()
             sys.exit(1)

@@ -119,10 +119,10 @@ def cargar_texto_anexo(nombre_archivo_anexo: str, directorio: str = "data/anexos
         with open(ruta_anexo, 'r', encoding='utf-8') as f:
             return f.read()
     except FileNotFoundError:
-        print(f"⚠️ Advertencia: Anexo no encontrado: {ruta_anexo}")
+        print(f"WARN: Anexo no encontrado: {ruta_anexo}")
         return None
     except Exception as e:
-        print(f"❌ Error al leer anexo {ruta_anexo}: {e}")
+        print(f"ERROR: Al leer anexo {ruta_anexo}: {e}")
         return None
 
 

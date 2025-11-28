@@ -36,12 +36,6 @@
                         </svg>
                         <span>Evaluación con IA</span>
                     </button>
-                    <button class="nav-btn" id="navTabManual" data-section="judge">
-                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" width="20" height="20">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                        </svg>
-                        <span>Evaluación Manual</span>
-                    </button>
                 </nav>
             </div>
             
@@ -74,9 +68,6 @@
                         </button>
                         <button class="btn-primary" id="compareLibraryBtn" disabled>
                             Comparar Seleccionados
-                        </button>
-                        <button class="btn-secondary" id="uploadNewBtn">
-                            ➕ Evaluar Nuevo Ensayo
                         </button>
                     </div>
                 </div>
@@ -398,24 +389,6 @@
                 </div>
             </div>
 
-                                <div class="total-score-section" style="display: none;">
-                                    <div class="total-score-display">
-                                        <span class="total-label">Puntuación Total:</span>
-                                        <span class="total-value" id="totalScoreValue">0.00</span>
-                                        <span class="total-max">/ 5.00</span>
-                                    </div>
-                                </div>
-
-                                <div class="comments-section" style="display: none;">
-                                    <label for="generalComments" class="form-label">Comentarios Generales</label>
-                                    <textarea id="generalComments" class="form-textarea" rows="4" placeholder="Escribe comentarios adicionales sobre la evaluación..."></textarea>
-                                </div>
-                            </form>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
             <div class="upload-section" id="uploadSection">
                 <div class="upload-header">
                     <button class="btn-back" id="backFromUploadBtn" title="Volver a la biblioteca">
@@ -455,32 +428,26 @@
             </div>
 
             <div class="results-section" id="resultsSection" style="display: none;">
-                <button class="btn-back" id="backFromResultsBtn" title="Volver a la biblioteca">
-                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" style="width: 20px; height: 20px;">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-                    </svg>
-                    Volver a Biblioteca
-                </button>
                 
                 <div class="results-header">
+                    <button class="btn-back" id="backFromResultsBtn" title="Volver a la biblioteca" style="margin-bottom: 0; margin-right: 1rem;">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" style="width: 20px; height: 20px;">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+                        </svg>
+                        Volver
+                    </button>
+
                     <div class="essay-title-section">
                         <h2 id="essayTitle">Resultados de la Evaluación</h2>
                         <div class="essay-metadata" id="essayMetadata"></div>
                     </div>
                     <div class="header-actions">
-                        <button class="btn-action" id="viewHistoryBtn" title="Ver historial de ensayos">
-                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                            </svg>
-                            Ver Historial
-                        </button>
                         <button class="btn-action" id="downloadReportBtn" title="Descargar reporte">
                             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
                             </svg>
                             Descargar
                         </button>
-                        <button class="btn-secondary" id="newEvaluationBtn">Nueva Evaluación</button>
                     </div>
                 </div>
                 
@@ -627,11 +594,7 @@
                     <div class="pdf-viewer-container" id="pdfViewerContainer" style="display: none;">
                         <div class="pdf-viewer-header">
                             <h3>📄 Documento Original</h3>
-                            <button class="btn-close-pdf" id="closePdfBtn" title="Cerrar PDF">
-                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-                                </svg>
-                            </button>
+                            <!-- Botón de cerrar PDF eliminado para mantenerlo siempre visible -->
                         </div>
                         <iframe id="pdfViewer" class="pdf-viewer-frame" title="Visor de PDF"></iframe>
                         <div class="pdf-error" id="pdfError" style="display: none;">
@@ -641,59 +604,6 @@
                 </div>
             </div>
 
-            <!-- Botón Flotante de Chat -->
-            <button class="chat-widget-btn" id="chatWidgetTrigger" title="Abrir chat con IA">
-                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
-                </svg>
-            </button>
-
-            <!-- Chat Panel -->
-            <aside class="chat-panel" id="chatPanel">
-                <div class="chat-header">
-                    <div class="chat-title">
-                        <svg class="chat-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
-                        </svg>
-                        <h3>Asistente IA</h3>
-                    </div>
-                    <button class="btn-close-chat" id="closeChatBtn" title="Cerrar chat">×</button>
-                </div>
-
-                <div class="chat-content" id="chatContent">
-                    <div class="chat-messages" id="chatMessages">
-                        <div class="chat-message assistant">
-                            <div class="message-avatar">IA</div>
-                            <div class="message-content">
-                                <p>Bienvenido al asistente de consultas académicas. Una vez que haya evaluado un ensayo, podré responder preguntas específicas sobre la evaluación, los criterios aplicados, o proporcionar recomendaciones para mejorar el trabajo.</p>
-                                <p class="message-tip">Puede consultar sobre cualquier aspecto de la evaluación o solicitar sugerencias de mejora.</p>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="chat-input-container">
-                        <div class="chat-input-wrapper">
-                            <textarea 
-                                class="chat-input" 
-                                id="chatInput" 
-                                placeholder="Escriba su consulta sobre la evaluación..."
-                                rows="3"
-                                disabled
-                            ></textarea>
-                            <button class="chat-send-btn-circle" id="chatSendBtn" disabled title="Enviar mensaje">
-                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6" />
-                                </svg>
-                            </button>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="chat-status" id="chatStatus" style="display: none;">
-                    <div class="chat-loader"></div>
-                    <span>Procesando consulta...</span>
-                </div>
-            </aside>
         </main>
 
         <!-- Modal de Estadísticas -->
@@ -741,9 +651,64 @@
         </footer>
     </div>
 
+    <!-- Botón Flotante de Chat -->
+    <button class="chat-widget-btn" id="chatWidgetTrigger" title="Abrir chat con IA">
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
+        </svg>
+    </button>
+
+    <!-- Chat Panel -->
+    <aside class="chat-panel" id="chatPanel">
+        <div class="chat-header">
+            <div class="chat-title">
+                <svg class="chat-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
+                </svg>
+                <h3>Asistente IA</h3>
+            </div>
+            <button class="btn-close-chat" id="closeChatBtn" title="Cerrar chat">×</button>
+        </div>
+
+        <div class="chat-content" id="chatContent">
+            <div class="chat-messages" id="chatMessages">
+                <div class="chat-message assistant">
+                    <div class="message-avatar">IA</div>
+                    <div class="message-content">
+                        <p>Bienvenido al asistente de consultas académicas. Para comenzar, haga clic en el botón "Ver Detalles" de cualquier ensayo en la biblioteca. Una vez cargado el ensayo, podré responder preguntas específicas sobre su evaluación, explicar los criterios aplicados y ofrecer recomendaciones de mejora.</p>
+                        <p class="message-tip">Puede consultar sobre cualquier aspecto de la evaluación o solicitar sugerencias de mejora.</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="chat-input-container">
+                <div class="chat-input-wrapper">
+                    <textarea 
+                        class="chat-input" 
+                        id="chatInput" 
+                        placeholder="Escriba su consulta sobre la evaluación..."
+                        rows="3"
+                        disabled
+                    ></textarea>
+                    <button class="chat-send-btn-circle" id="chatSendBtn" disabled title="Enviar mensaje">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6" />
+                        </svg>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <div class="chat-status" id="chatStatus" style="display: none;">
+            <div class="chat-loader"></div>
+            <span>Procesando consulta...</span>
+        </div>
+    </aside>
+
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <script src="/static/main.js"></script>
     <script src="/static/criteria_management.js"></script>
     <script src="/static/grading_cockpit.js"></script>

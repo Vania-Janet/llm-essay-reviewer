@@ -50,7 +50,7 @@ class AuthManager:
                     )
                 # Desarrollo: usar clave fija (NO USAR EN PRODUCCIÓN)
                 jwt_secret = 'dev-jwt-secret-CHANGE-THIS-IN-PRODUCTION-87654321'
-                print("⚠️  WARNING: Usando JWT_SECRET_KEY de desarrollo. NO usar en producción.")
+                print("WARNING: Usando JWT_SECRET_KEY de desarrollo. NO usar en produccion.")
             self.secret_key = jwt_secret
         
         self.token_expiry_hours = 24

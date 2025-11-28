@@ -79,7 +79,7 @@ class EvaluadorEnsayos:
     
     def _evaluar_calidad_tecnica(self, state: Dict[str, Any]) -> Dict[str, Any]:
         """Nodo: Evalúa calidad técnica y rigor académico."""
-        print("📐 Evaluando: Calidad técnica y rigor académico...")
+        print(" Evaluando: Calidad técnica y rigor académico...")
         
         prompt = ChatPromptTemplate.from_messages([
             ("system", PROMPT_SISTEMA),
@@ -97,8 +97,8 @@ class EvaluadorEnsayos:
         }
     
     def _evaluar_creatividad(self, state: Dict[str, Any]) -> Dict[str, Any]:
-        """Nodo: Evalúa creatividad y originalidad."""
-        print("🎨 Evaluando: Creatividad y originalidad...")
+        """Nodo: Evalua creatividad y originalidad."""
+        print("Evaluando: Creatividad y originalidad...")
         
         prompt = ChatPromptTemplate.from_messages([
             ("system", PROMPT_SISTEMA),
@@ -117,7 +117,7 @@ class EvaluadorEnsayos:
     
     def _evaluar_vinculacion(self, state: Dict[str, Any]) -> Dict[str, Any]:
         """Nodo: Evalúa vinculación con ejes temáticos."""
-        print("🎯 Evaluando: Vinculación con ejes temáticos...")
+        print("Evaluando: Vinculacion con ejes tematicos...")
         
         prompt = ChatPromptTemplate.from_messages([
             ("system", PROMPT_SISTEMA),
@@ -136,7 +136,7 @@ class EvaluadorEnsayos:
     
     def _evaluar_bienestar(self, state: Dict[str, Any]) -> Dict[str, Any]:
         """Nodo: Evalúa reflexión sobre bienestar colectivo."""
-        print("🌱 Evaluando: Bienestar colectivo y responsabilidad social...")
+        print("Evaluando: Bienestar colectivo y responsabilidad social...")
         
         prompt = ChatPromptTemplate.from_messages([
             ("system", PROMPT_SISTEMA),
@@ -155,7 +155,7 @@ class EvaluadorEnsayos:
     
     def _evaluar_uso_ia(self, state: Dict[str, Any]) -> Dict[str, Any]:
         """Nodo: Evalúa uso responsable y reflexivo de herramientas de IA."""
-        print("🤖 Evaluando: Uso responsable y reflexivo de herramientas de IA...")
+        print("Evaluando: Uso responsable y reflexivo de herramientas de IA...")
         
         # Obtener el anexo de IA si está disponible
         anexo_ia = state.get("anexo_ia", "[NO SE PROPORCIONÓ ANEXO DE IA]")
@@ -180,7 +180,7 @@ class EvaluadorEnsayos:
     
     def _evaluar_impacto(self, state: Dict[str, Any]) -> Dict[str, Any]:
         """Nodo: Evalúa potencial de impacto."""
-        print("🚀 Evaluando: Potencial de impacto y publicación...")
+        print("Evaluando: Potencial de impacto y publicacion...")
         
         prompt = ChatPromptTemplate.from_messages([
             ("system", PROMPT_SISTEMA),
@@ -198,8 +198,8 @@ class EvaluadorEnsayos:
         }
     
     def _generar_comentario_general(self, state: Dict[str, Any]) -> Dict[str, Any]:
-        """Nodo: Genera comentario general y ensambla evaluación final."""
-        print("📝 Generando comentario general...")
+        """Nodo: Genera comentario general y ensambla evaluacion final."""
+        print("Generando comentario general...")
         
         # Preparar resumen de evaluaciones previas
         evaluaciones_previas = f"""
@@ -255,16 +255,16 @@ class EvaluadorEnsayos:
         }
     
     def _construir_grafo(self) -> StateGraph:
-        """Construye el grafo de evaluación con LangGraph.
+        """Construye el grafo de evaluacion con LangGraph.
         
-        🚀 OPTIMIZACIÓN: Los criterios se evalúan en paralelo para reducir
+        OPTIMIZACION: Los criterios se evaluan en paralelo para reducir
         el tiempo de respuesta de ~35s a ~10-15s por ensayo.
         """
         # Crear el grafo con el estado tipado
         workflow = StateGraph(EstadoGrafo)
         
         # Agregar nodos
-        workflow.add_node("inicio", lambda x: x)  # Nodo dummy para paralelización
+        workflow.add_node("inicio", lambda x: x)  # Nodo dummy para paralelizacion
         workflow.add_node("calidad_tecnica", self._evaluar_calidad_tecnica)
         workflow.add_node("creatividad", self._evaluar_creatividad)
         workflow.add_node("vinculacion", self._evaluar_vinculacion)
@@ -273,7 +273,7 @@ class EvaluadorEnsayos:
         workflow.add_node("impacto", self._evaluar_impacto)
         workflow.add_node("comentario_general", self._generar_comentario_general)
         
-        # 🚀 PARALELIZACIÓN: Todos los criterios se evalúan simultáneamente
+        # PARALELIZACION: Todos los criterios se evaluan simultaneamente
         workflow.set_entry_point("inicio")
         
         # Desde inicio, lanzar todas las evaluaciones en paralelo
@@ -309,9 +309,9 @@ class EvaluadorEnsayos:
             Objeto EvaluacionEnsayo con todos los criterios evaluados
         """
         print("\n" + "="*60)
-        print("🎓 INICIANDO EVALUACIÓN DE ENSAYO")
+        print("INICIANDO EVALUACION DE ENSAYO")
         if anexo_ia:
-            print("📎 Anexo de IA detectado y será incluido en la evaluación")
+            print("Anexo de IA detectado y sera incluido en la evaluacion")
         print("="*60 + "\n")
         
         # Estado inicial con todos los campos requeridos

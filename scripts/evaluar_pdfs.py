@@ -30,11 +30,11 @@ def evaluar_pdf(
     pdf_name = Path(pdf_path).stem
     
     print("\n" + "="*80)
-    print(f"📄 PROCESANDO Y EVALUANDO: {pdf_name}")
+    print(f"PROCESANDO Y EVALUANDO: {pdf_name}")
     print("="*80 + "\n")
     
     # Paso 1: Extraer y limpiar texto del PDF
-    print("PASO 1/2: Extracción y limpieza del PDF")
+    print("PASO 1/2: Extraccion y limpieza del PDF")
     print("-"*80)
     
     processor = PDFProcessor()
@@ -51,14 +51,14 @@ def evaluar_pdf(
             limpiar=True
         )
     except Exception as e:
-        print(f"❌ Error procesando PDF: {e}")
+        print(f"ERROR: Procesando PDF: {e}")
         return None
     
-    print(f"✅ Texto extraído y limpiado: {len(texto)} caracteres")
+    print(f"Texto extraido y limpiado: {len(texto)} caracteres")
     print()
     
     # Paso 2: Evaluar el ensayo
-    print("PASO 2/2: Evaluación del ensayo")
+    print("PASO 2/2: Evaluacion del ensayo")
     print("-"*80)
     
     evaluador = EvaluadorEnsayos()
@@ -66,7 +66,7 @@ def evaluar_pdf(
     try:
         evaluacion = evaluador.evaluar(texto)
     except Exception as e:
-        print(f"❌ Error evaluando ensayo: {e}")
+        print(f"ERROR: Evaluando ensayo: {e}")
         return None
     
     # Mostrar resultados
@@ -77,8 +77,8 @@ def evaluar_pdf(
     reporte_html = Path(output_dir) / f"{pdf_name}_evaluacion.html"
     guardar_evaluacion_html(evaluacion, str(reporte_html))
     
-    print(f"\n📊 Puntuación final: {evaluacion.puntuacion_total:.2f}/5.00")
-    print(f"📁 Archivos generados:")
+    print(f"\nPuntuacion final: {evaluacion.puntuacion_total:.2f}/5.00")
+    print(f"Archivos generados:")
     if texto_limpio_path:
         print(f"   - Texto limpio: {texto_limpio_path}")
     print(f"   - Reporte HTML: {reporte_html}")
@@ -109,11 +109,11 @@ def evaluar_directorio_pdfs(
     pdfs = list(Path(directorio).glob("*.pdf"))
     
     if not pdfs:
-        print(f"❌ No se encontraron archivos PDF en {directorio}")
+        print(f"ERROR: No se encontraron archivos PDF en {directorio}")
         return
     
     print("\n" + "="*80)
-    print(f"📚 PROCESAMIENTO MASIVO: {len(pdfs)} PDFs encontrados")
+    print(f"PROCESAMIENTO MASIVO: {len(pdfs)} PDFs encontrados")
     print("="*80)
     
     resultados = []
@@ -140,16 +140,16 @@ def evaluar_directorio_pdfs(
                     'evaluacion': evaluacion
                 })
         except Exception as e:
-            print(f"❌ Error procesando {pdf_path.name}: {e}")
+            print(f"ERROR: Procesando {pdf_path.name}: {e}")
             continue
     
     # Resumen final
     print("\n\n" + "="*80)
-    print("📊 RESUMEN FINAL DE EVALUACIONES")
+    print("RESUMEN FINAL DE EVALUACIONES")
     print("="*80 + "\n")
     
     if not resultados:
-        print("❌ No se pudo procesar ningún PDF exitosamente")
+        print("ERROR: No se pudo procesar ningun PDF exitosamente")
         return
     
     # Ordenar por puntuación
@@ -165,17 +165,17 @@ def evaluar_directorio_pdfs(
         
         puntuacion = resultado['puntuacion']
         
-        # Emoji según puntuación
+        # Indicador segun puntuacion
         if puntuacion >= 4.5:
-            emoji = "🏆"
+            emoji = "[EXCELENTE]"
         elif puntuacion >= 4.0:
-            emoji = "⭐"
+            emoji = "[MUY BIEN]"
         elif puntuacion >= 3.5:
-            emoji = "✅"
+            emoji = "[BIEN]"
         elif puntuacion >= 3.0:
-            emoji = "📝"
+            emoji = "[REGULAR]"
         else:
-            emoji = "📄"
+            emoji = "[BAJO]"
         
         print(f"{i:<4} {nombre:<50} {emoji} {puntuacion:>8.2f}/5.00")
     
@@ -193,25 +193,25 @@ def evaluar_directorio_pdfs(
     print(f"  • Mínima: {min_punt:.2f}/5.00")
     print("-"*80)
     
-    print(f"\n✅ Todos los reportes guardados en: {output_dir}/")
+    print(f"\nTodos los reportes guardados en: {output_dir}/")
     print("="*80 + "\n")
 
 
 def main():
-    """Función principal."""
-    print("\n📄 EVALUADOR DE ENSAYOS DESDE PDF")
+    """Funcion principal."""
+    print("\nEVALUADOR DE ENSAYOS DESDE PDF")
     print("="*80)
     print("\nEste script:")
     print("  1. Extrae texto de PDFs (pypdf o pdfplumber)")
-    print("  2. Limpia el texto con LLM (quita números de página, une líneas, etc.)")
-    print("  3. Evalúa el ensayo con los 5 criterios establecidos")
+    print("  2. Limpia el texto con LLM (quita numeros de pagina, une lineas, etc.)")
+    print("  3. Evalua el ensayo con los 5 criterios establecidos")
     print("  4. Genera reportes HTML detallados")
     print()
     
     ruta = input("Ingresa la ruta del PDF o directorio con PDFs: ").strip()
     
     if not os.path.exists(ruta):
-        print(f"❌ Error: No se encontró {ruta}")
+        print(f"ERROR: No se encontro {ruta}")
         return
     
     output_dir = input("Directorio de salida (default: evaluaciones_pdf): ").strip()

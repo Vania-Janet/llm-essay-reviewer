@@ -13,6 +13,7 @@ from sqlalchemy import or_
 from app.database.connection import db
 from app.database.models import Ensayo, CriterioPersonalizado, EvaluacionJurado
 from app.api.middleware import require_auth
+from app.utils.report_generator import ReportGenerator
 
 # Para el chat con LangChain
 from langchain_openai import ChatOpenAI
@@ -77,7 +78,7 @@ def get_ensayos():
             'nombre_archivo': e.nombre_archivo,
             'puntuacion_total': float(e.puntuacion_total) if e.puntuacion_total else 0,
             'fecha_evaluacion': e.fecha_evaluacion.strftime('%Y-%m-%d %H:%M:%S') if e.fecha_evaluacion else None,
-            'contenido_preview': e.texto_completo[:200] + '...' if e.texto_completo and len(e.texto_completo) > 200 else e.texto_completo
+            'contenido_preview': e.texto_completo[:500] + '...' if e.texto_completo and len(e.texto_completo) > 500 else e.texto_completo
         } for e in ensayos]
         
         return jsonify({
@@ -133,6 +134,63 @@ def get_essay_pdf(essay_id):
         
     except Exception as e:
         print(f"Error al servir PDF: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({'error': str(e)}), 500
+
+
+@bp.route('/essays/<int:essay_id>/report', methods=['GET'])
+@require_auth
+def generate_essay_report(essay_id):
+    """Generar reporte PDF profesional del ensayo."""
+    try:
+        ensayo = Ensayo.query.get_or_404(essay_id)
+        user_id = request.current_user.get('user_id')
+        
+        # Buscar si hay evaluación del jurado actual
+        evaluacion_jurado = EvaluacionJurado.query.filter_by(
+            ensayo_id=essay_id,
+            jurado_id=user_id
+        ).first()
+        
+        # Preparar datos para el reporte
+        essay_data = ensayo.to_dict()
+        judge_data = None
+        
+        if evaluacion_jurado:
+            judge_data = {
+                'puntuacion_total': evaluacion_jurado.puntuacion_total,
+                'comentario_general': evaluacion_jurado.comentario_general,
+                'puntajes': {
+                    'tecnica': evaluacion_jurado.calificacion_tecnica,
+                    'creatividad': evaluacion_jurado.calificacion_creatividad,
+                    'vinculacion': evaluacion_jurado.calificacion_vinculacion,
+                    'bienestar': evaluacion_jurado.calificacion_bienestar,
+                    'uso_ia': evaluacion_jurado.calificacion_uso_ia,
+                    'impacto': evaluacion_jurado.calificacion_impacto
+                },
+                'comentarios': {
+                    'tecnica': evaluacion_jurado.comentario_tecnica,
+                    'creatividad': evaluacion_jurado.comentario_creatividad,
+                    'vinculacion': evaluacion_jurado.comentario_vinculacion,
+                    'bienestar': evaluacion_jurado.comentario_bienestar,
+                    'uso_ia': evaluacion_jurado.comentario_uso_ia,
+                    'impacto': evaluacion_jurado.comentario_impacto
+                }
+            }
+            
+        generator = ReportGenerator()
+        pdf_buffer = generator.generate_essay_report(essay_data, judge_data)
+        
+        return send_file(
+            pdf_buffer,
+            mimetype='application/pdf',
+            as_attachment=True,
+            download_name=f'Reporte_Evaluacion_{ensayo.nombre_archivo.replace(".pdf", "")}.pdf'
+        )
+        
+    except Exception as e:
+        print(f"Error al generar reporte PDF: {str(e)}")
         import traceback
         traceback.print_exc()
         return jsonify({'error': str(e)}), 500
@@ -199,116 +257,35 @@ def export_essays_csv():
 @bp.route('/essays/export/excel', methods=['GET'])
 @require_auth
 def export_essays_excel():
-    """Exportar ensayos a Excel profesional con formato mejorado."""
+    """Exportar ensayos a Excel profesional - Sirve el archivo pre-generado."""
     try:
-        try:
-            from openpyxl import Workbook
-            from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
-            from openpyxl.utils import get_column_letter
-        except ImportError:
-            return jsonify({'error': 'openpyxl no está instalado. Usa la exportación CSV.'}), 500
+        from pathlib import Path
         
-        ensayos = Ensayo.query.order_by(Ensayo.puntuacion_total.desc()).all()
+        # Ruta al archivo Excel pre-generado
+        # app/api/routes/essays.py -> app/api/routes -> app/api -> app -> root
+        project_root = Path(__file__).resolve().parent.parent.parent.parent
+        excel_path = project_root / 'data' / 'xls' / 'ensayos_evaluados_20251127_profesional.xlsx'
         
-        if not ensayos:
-            return jsonify({'error': 'No hay ensayos para exportar'}), 404
+        print(f"Buscando archivo Excel en: {excel_path}")
+        print(f"¿Archivo existe? {excel_path.exists()}")
         
-        wb = Workbook()
-        ws = wb.active
-        ws.title = "Evaluaciones"
+        # Verificar que el archivo existe
+        if not excel_path.exists():
+            print(f"ERROR: Archivo no encontrado en {excel_path}")
+            return jsonify({'error': f'Archivo Excel no encontrado en {excel_path}'}), 404
         
-        # Estilos
-        header_fill = PatternFill(start_color="1F4E78", end_color="1F4E78", fill_type="solid")
-        alt_row_fill = PatternFill(start_color="E7E6E6", end_color="E7E6E6", fill_type="solid")
-        excellent_fill = PatternFill(start_color="C6EFCE", end_color="C6EFCE", fill_type="solid")
-        good_fill = PatternFill(start_color="FFEB9C", end_color="FFEB9C", fill_type="solid")
-        poor_fill = PatternFill(start_color="FFC7CE", end_color="FFC7CE", fill_type="solid")
-        
-        thin_border = Border(
-            left=Side(style='thin', color='CCCCCC'),
-            right=Side(style='thin', color='CCCCCC'),
-            top=Side(style='thin', color='CCCCCC'),
-            bottom=Side(style='thin', color='CCCCCC')
-        )
-        
-        headers = [
-            'Ranking', 'Puntuación Total', 'Nombre de Archivo', 'Autor',
-            'Calidad Técnica', 'Creatividad', 'Vinculación Temática',
-            'Bienestar Colectivo', 'Uso Responsable IA', 'Potencial Impacto',
-            'Tiene Anexo', 'Fecha Evaluación', 'Longitud (palabras)', 'Comentario General'
-        ]
-        
-        # Escribir encabezados
-        for col_idx, header in enumerate(headers, 1):
-            cell = ws.cell(row=1, column=col_idx, value=header)
-            cell.font = Font(bold=True, color="FFFFFF", size=11, name='Calibri')
-            cell.fill = header_fill
-            cell.alignment = Alignment(horizontal='center', vertical='center', wrap_text=True)
-            cell.border = thin_border
-        
-        # Escribir datos
-        for i, ensayo in enumerate(ensayos, 2):
-            row_data = [
-                i - 1,
-                ensayo.puntuacion_total,
-                ensayo.nombre_archivo,
-                getattr(ensayo, 'autor', 'N/A'),
-                f"{ensayo.calidad_tecnica.get('calificacion', 'N/A')}/5",
-                f"{ensayo.creatividad.get('calificacion', 'N/A')}/5",
-                f"{ensayo.vinculacion_tematica.get('calificacion', 'N/A')}/5",
-                f"{ensayo.bienestar_colectivo.get('calificacion', 'N/A')}/5",
-                f"{ensayo.uso_responsable_ia.get('calificacion', 'N/A')}/5",
-                f"{ensayo.potencial_impacto.get('calificacion', 'N/A')}/5",
-                'Sí' if ensayo.tiene_anexo else 'No',
-                ensayo.fecha_evaluacion.strftime('%Y-%m-%d %H:%M:%S'),
-                getattr(ensayo, 'num_palabras', len(ensayo.texto_completo.split()) if ensayo.texto_completo else 0),
-                ensayo.comentario_general
-            ]
-            
-            for col_idx, value in enumerate(row_data, 1):
-                cell = ws.cell(row=i, column=col_idx, value=value)
-                cell.border = thin_border
-                cell.font = Font(name='Calibri', size=10)
-                
-                if i % 2 == 0:
-                    cell.fill = alt_row_fill
-                
-                # Formato especial para puntuación total
-                if col_idx == 2:
-                    puntuacion = ensayo.puntuacion_total
-                    if puntuacion >= 4.5:
-                        cell.fill = excellent_fill
-                        cell.font = Font(bold=True, color="006100", size=11, name='Calibri')
-                    elif puntuacion >= 3.5:
-                        cell.fill = good_fill
-                        cell.font = Font(bold=True, color="9C6500", size=11, name='Calibri')
-                    else:
-                        cell.fill = poor_fill
-                        cell.font = Font(bold=True, color="9C0006", size=11, name='Calibri')
-        
-        # Ajustar anchos
-        column_widths = {
-            'A': 10, 'B': 15, 'C': 50, 'D': 30, 'E': 15, 'F': 15, 'G': 18,
-            'H': 18, 'I': 18, 'J': 15, 'K': 12, 'L': 18, 'M': 15, 'N': 60
-        }
-        for col, width in column_widths.items():
-            ws.column_dimensions[col].width = width
-        
-        ws.freeze_panes = "B2"
-        
-        output = io.BytesIO()
-        wb.save(output)
-        output.seek(0)
-        
+        print(f"Enviando archivo Excel: {excel_path}")
         return send_file(
-            output,
+            excel_path,
             mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
             as_attachment=True,
-            download_name=f'ensayos_evaluados_{ensayos[0].fecha_evaluacion.strftime("%Y%m%d")}_profesional.xlsx'
+            download_name='ensayos_evaluados_20251127_profesional.xlsx'
         )
         
     except Exception as e:
         print(f"Error al exportar ensayos a Excel: {str(e)}")
+        import traceback
+        traceback.print_exc()
         return jsonify({'error': str(e)}), 500
 
 

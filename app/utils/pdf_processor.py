@@ -85,7 +85,7 @@ class PDFProcessor:
             reader = pypdf.PdfReader(file)
             num_paginas = len(reader.pages)
             
-            print(f"📄 Extrayendo texto de {num_paginas} páginas con pypdf...")
+            print(f"Extrayendo texto de {num_paginas} paginas con pypdf...")
             
             for i, page in enumerate(reader.pages, 1):
                 texto = page.extract_text()
@@ -115,7 +115,7 @@ class PDFProcessor:
         with pdfplumber.open(pdf_path) as pdf:
             num_paginas = len(pdf.pages)
             
-            print(f"📄 Extrayendo texto de {num_paginas} páginas con pdfplumber...")
+            print(f"Extrayendo texto de {num_paginas} paginas con pdfplumber...")
             
             for i, page in enumerate(pdf.pages, 1):
                 texto = page.extract_text()
@@ -196,24 +196,24 @@ class PDFProcessor:
         if not os.path.exists(pdf_path):
             raise FileNotFoundError(f"No se encontró el archivo: {pdf_path}")
         
-        print(f"\n📚 Procesando PDF: {Path(pdf_path).name}")
+        print(f"\nProcesando PDF: {Path(pdf_path).name}")
         print("="*80)
         
         # Extraer texto
         texto = self.extraer_texto(pdf_path, metodo=metodo)
         
-        print(f"✅ Extraídos {len(texto)} caracteres")
+        print(f"Extraidos {len(texto)} caracteres")
         
         # Limpiar si se solicitó
         if limpiar:
             texto = self.limpiar_texto(texto)
-            print(f"✅ Texto limpiado: {len(texto)} caracteres")
+            print(f"Texto limpiado: {len(texto)} caracteres")
         
         # Guardar si se especificó ruta de salida
         if output_path:
             with open(output_path, 'w', encoding='utf-8') as f:
                 f.write(texto)
-            print(f"💾 Guardado en: {output_path}")
+            print(f"Guardado en: {output_path}")
         
         print("="*80 + "\n")
         
@@ -245,10 +245,10 @@ class PDFProcessor:
         pdfs = list(Path(directorio).glob("*.pdf"))
         
         if not pdfs:
-            print(f"❌ No se encontraron archivos PDF en {directorio}")
+            print(f"ERROR: No se encontraron archivos PDF en {directorio}")
             return {}
         
-        print(f"\n📚 Se encontraron {len(pdfs)} archivos PDF para procesar")
+        print(f"\nSe encontraron {len(pdfs)} archivos PDF para procesar")
         print("="*80)
         
         resultados = {}
@@ -271,12 +271,12 @@ class PDFProcessor:
                 resultados[pdf_path.name] = texto
                 
             except Exception as e:
-                print(f"❌ Error procesando {pdf_path.name}: {e}")
+                print(f"ERROR: Procesando {pdf_path.name}: {e}")
                 continue
         
         print("\n" + "="*80)
-        print(f"✅ Procesados {len(resultados)}/{len(pdfs)} archivos exitosamente")
-        print(f"💾 Archivos guardados en: {output_dir}/")
+        print(f"Procesados {len(resultados)}/{len(pdfs)} archivos exitosamente")
+        print(f"Archivos guardados en: {output_dir}/")
         print("="*80 + "\n")
         
         return resultados
@@ -286,7 +286,7 @@ def main():
     """Función principal para uso desde línea de comandos."""
     import sys
     
-    print("\n📄 PROCESADOR DE PDFs PARA ENSAYOS")
+    print("\nPROCESADOR DE PDFs PARA ENSAYOS")
     print("="*80)
     
     if len(sys.argv) > 1:
@@ -307,7 +307,7 @@ def main():
         pdf_path = input("Ingresa la ruta del PDF o directorio: ").strip()
         
         if not os.path.exists(pdf_path):
-            print(f"❌ Error: No se encontró {pdf_path}")
+            print(f"ERROR: No se encontro {pdf_path}")
             return
         
         processor = PDFProcessor()

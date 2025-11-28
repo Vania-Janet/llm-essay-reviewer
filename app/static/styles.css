@@ -461,22 +461,44 @@ main {
 }
 
 .results-section {
-    background: white;
-    border-radius: 8px;
-    padding: 1.25rem;
-    box-shadow: var(--shadow);
-    border: 1px solid var(--border-color);
+    position: fixed !important;
+    top: 76px !important;
+    left: 0 !important;
+    width: 100vw !important;
+    height: calc(100vh - 76px) !important;
+    background-color: #f8f9fa;
+    z-index: 90 !important;
+    display: none; /* Se activa con JS */
+    flex-direction: column;
+    overflow: hidden !important; 
 }
 
 /* Layout para título y PDF viewer */
 .results-header {
+    flex: 0 0 auto; /* No permite que se aplaste */
+    background: white;
+    padding: 1rem 2rem;
+    border-bottom: 1px solid #e5e7eb;
     display: flex;
-    justify-content: space-between;
-    align-items: flex-start;
-    margin-bottom: 2rem;
-    padding-bottom: 1rem;
-    border-bottom: 2px solid var(--border-color);
-    flex-wrap: wrap;
+    justify-content: flex-start; /* Alineación a la izquierda */
+    align-items: center;
+    z-index: 100; /* Z-Index alto para recibir clics */
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+    position: relative; /* Necesario para que z-index funcione */
+}
+
+.results-header .btn-back {
+    margin-bottom: 0;
+    margin-right: 1rem;
+    background: #f1f5f9;
+    border: 1px solid #cbd5e1;
+    color: #475569;
+    white-space: nowrap;
+}
+
+.results-header .btn-back:hover {
+    background: #e2e8f0;
+    color: #1e293b;
 }
 
 .essay-title-section {
@@ -516,62 +538,91 @@ main {
 
 /* Layout con PDF en dos columnas */
 .results-with-pdf {
-    display: grid;
-    grid-template-columns: 20% 80%;
-    gap: 1rem;
-    margin-top: 1rem;
-    height: calc(100vh - 200px);
+    flex: 1; /* Ocupa el espacio restante */
+    display: flex;
     overflow: hidden;
+    /* height: 100%;  <--- BORRA O COMENTA ESTA LÍNEA, ES LA CAUSANTE DEL ERROR */
+    height: auto;  /* Usa auto en su lugar */
+    min-height: 0; /* Truco de Flexbox para permitir scroll interno */
+    position: relative;
+    z-index: 1; /* Z-index bajo para que no tape el header */
 }
 
 .results-content {
-    min-width: 0;
-    overflow-y: auto;
-    overflow-x: hidden;
+    flex: 1;
+    overflow-y: auto; /* Aquí está el ÚNICO scroll permitido */
     height: 100%;
+    min-width: 0;
+    overflow-x: hidden;
     padding-right: 0.5rem;
+    transition: flex 0.3s ease;
 }
 
 .pdf-viewer-container {
-    position: sticky;
-    top: 1rem;
+    width: 45%; /* O flex: 1 si quieres mitad y mitad */
     height: 100%;
-    min-height: 350px;
-    max-height: calc(100vh - 220px);
-    background: var(--bg-subtle);
-    border-radius: 6px;
-    border: 1px solid var(--border-color);
-    overflow: hidden;
     display: flex;
     flex-direction: column;
+    min-width: 350px;
+    max-width: 600px;
+    background: var(--bg-subtle);
+    border-radius: 8px;
+    border: 1px solid var(--border-color);
+    overflow: hidden;
+    box-shadow: var(--shadow);
+    transition: all 0.3s ease;
 }
 
 .pdf-viewer-header {
     background: var(--primary-blue);
     color: white;
-    padding: 0.5rem 0.75rem;
+    padding: 0.75rem 1rem;
     font-weight: 600;
-    font-size: 0.8rem;
+    font-size: 0.9rem;
     display: flex;
     justify-content: space-between;
     align-items: center;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 .pdf-viewer-header h3 {
     margin: 0;
-    font-size: 0.8rem;
+    font-size: 0.9rem;
     color: white;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
 }
 
 .btn-close-pdf {
-    display: none;
+    background: rgba(255, 255, 255, 0.2);
+    border: none;
+    color: white;
+    cursor: pointer;
+    width: 24px;
+    height: 24px;
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+}
+
+.btn-close-pdf:hover {
+    background: rgba(255, 255, 255, 0.3);
+    transform: scale(1.05);
+}
+
+.btn-close-pdf svg {
+    width: 16px;
+    height: 16px;
 }
 
 .pdf-viewer-frame {
     flex: 1;
-    border: none;
     width: 100%;
     height: 100%;
+    border: none;
     display: block;
     background: white;
 }
@@ -595,13 +646,21 @@ main {
 
 @media (max-width: 1024px) {
     .results-with-pdf {
-        grid-template-columns: 1fr;
+        flex-direction: column;
+        height: auto;
+        overflow: visible;
     }
     
+    .results-content {
+        height: auto;
+        overflow: visible;
+    }
+
     .pdf-viewer-container {
-        position: relative;
-        height: 600px;
-        top: 0;
+        width: 100%;
+        max-width: none;
+        height: 500px;
+        margin-bottom: 2rem;
     }
     
     .library-list,
@@ -611,20 +670,13 @@ main {
 }
 
 .results-section > .btn-back {
-    margin-bottom: 1.5rem;
+    position: relative;
+    z-index: 51;
+    margin-bottom: 1rem;
+    flex-shrink: 0; /* Evita que se aplaste si falta espacio */
 }
 
-.results-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: flex-start;
-    margin-bottom: 2rem;
-    padding-bottom: 1rem;
-    border-bottom: 2px solid var(--border-color);
-    flex-wrap: wrap;
-    gap: 1rem;
-    position: relative;
-}
+
 
 .results-header h2 {
     color: var(--primary-blue);
@@ -1227,6 +1279,49 @@ footer p {
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
     position: relative;
     max-width: 82%;
+    word-break: break-word;
+    overflow-wrap: break-word;
+    overflow: hidden;
+    white-space: normal;
+}
+
+.message-content * {
+    word-break: break-word;
+    overflow-wrap: break-word;
+    max-width: 100%;
+}
+
+.message-content pre {
+    white-space: pre-wrap;
+    word-wrap: break-word;
+    background: #f1f5f9;
+    padding: 0.5rem;
+    border-radius: 4px;
+    overflow-x: auto;
+    max-width: 100%;
+    margin: 0.5rem 0;
+}
+
+.message-content code {
+    font-family: monospace;
+    background: rgba(0, 0, 0, 0.05);
+    padding: 0.1rem 0.3rem;
+    border-radius: 3px;
+}
+
+.message-content table {
+    display: block;
+    width: 100%;
+    overflow-x: auto;
+    border-collapse: collapse;
+    margin: 0.5rem 0;
+}
+
+.message-content th,
+.message-content td {
+    border: 1px solid #e2e8f0;
+    padding: 0.4rem;
+    font-size: 0.8rem;
 }
 
 /* Mensajes de la IA */
@@ -1757,12 +1852,16 @@ footer p {
     margin-top: 0.75rem;
     padding-top: 0.75rem;
     border-top: 1px solid var(--border-color);
-    font-size: 0.85rem;
+    font-size: 0.75rem; /* Reduced font size */
     color: var(--text-medium);
-    line-height: 1.4;
-    max-height: 60px;
+    line-height: 1.3;
+    max-height: 80px; /* Increased height to show more text */
     overflow: hidden;
     text-overflow: ellipsis;
+    display: -webkit-box;
+    -webkit-line-clamp: 4; /* Show 4 lines */
+    line-clamp: 4;
+    -webkit-box-orient: vertical;
 }
 
 .essay-card-actions {
@@ -2702,10 +2801,6 @@ footer p {
     margin-top: 2px;
 }
 
-.queue-item.done .student-name {
-    color: #059669;
-}
-
 /* ============================================
    PANEL CENTRAL: VISOR DE PDF (45%)
    ============================================ */
@@ -3199,5 +3294,38 @@ footer p {
     
     .form-row {
         grid-template-columns: 1fr;
+    }
+}
+
+/* Typing Indicator Animation */
+.typing-indicator {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    padding: 4px 8px;
+}
+
+.typing-dot {
+    width: 6px;
+    height: 6px;
+    background-color: #9ca3af;
+    border-radius: 50%;
+    animation: typingBounce 1.4s infinite ease-in-out both;
+}
+
+.typing-dot:nth-child(1) {
+    animation-delay: -0.32s;
+}
+
+.typing-dot:nth-child(2) {
+    animation-delay: -0.16s;
+}
+
+@keyframes typingBounce {
+    0%, 80%, 100% {
+        transform: scale(0);
+    }
+    40% {
+        transform: scale(1);
     }
 }
