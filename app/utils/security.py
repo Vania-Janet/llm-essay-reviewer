@@ -4,7 +4,7 @@ Utiliza bcrypt para hashing de contraseñas y JWT para sesiones.
 """
 import os
 import secrets
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from functools import wraps
 from flask import request, jsonify
 import bcrypt
@@ -101,8 +101,8 @@ class AuthManager:
         payload = {
             'user_id': user_id,
             'username': username,
-            'exp': datetime.utcnow() + timedelta(hours=self.token_expiry_hours),
-            'iat': datetime.utcnow()
+            'exp': datetime.now(timezone.utc) + timedelta(hours=self.token_expiry_hours),
+            'iat': datetime.now(timezone.utc)
         }
         return jwt.encode(payload, self.secret_key, algorithm='HS256')
     

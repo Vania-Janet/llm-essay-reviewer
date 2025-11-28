@@ -4,7 +4,7 @@ Optimizado con índices para búsquedas rápidas y cache de comparaciones.
 """
 import os
 import hashlib
-from datetime import datetime
+from datetime import datetime, timezone
 from pathlib import Path
 from sqlalchemy import JSON, Index, ForeignKey, UniqueConstraint, func
 from sqlalchemy.orm import relationship
@@ -344,7 +344,7 @@ class EvaluacionJurado(db.Model):
     def marcar_completada(self):
         """Marca la evaluación como completada y registra la fecha."""
         self.estado = 'completada'
-        self.fecha_completada = datetime.utcnow()
+        self.fecha_completada = datetime.now(timezone.utc)
         self.calcular_puntuacion_total()
     
     def to_dict(self, incluir_jurado=False):
@@ -462,7 +462,7 @@ class Comparacion(db.Model):
     def registrar_acceso(self):
         """Incrementa el contador de accesos."""
         self.veces_accedida += 1
-        self.ultima_accedida = datetime.utcnow()
+        self.ultima_accedida = datetime.now(timezone.utc)
         db.session.commit()
     
     def to_dict(self):
@@ -532,7 +532,7 @@ class ComparacionMultiple(db.Model):
     def registrar_acceso(self):
         """Incrementa el contador de accesos."""
         self.veces_accedida += 1
-        self.ultima_accedida = datetime.utcnow()
+        self.ultima_accedida = datetime.now(timezone.utc)
         db.session.commit()
     
     def to_dict(self):
@@ -731,7 +731,7 @@ def actualizar_estadistica(tipo: str, valor: dict):
     
     if estadistica:
         estadistica.valor = valor
-        estadistica.fecha_actualizacion = datetime.utcnow()
+        estadistica.fecha_actualizacion = datetime.now(timezone.utc)
         estadistica.desactualizada = False
     else:
         estadistica = EstadisticaGlobal(tipo=tipo, valor=valor)

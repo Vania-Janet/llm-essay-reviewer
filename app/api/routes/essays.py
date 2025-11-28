@@ -4,7 +4,7 @@ Rutas para gestión de ensayos - CRUD, exportación, comparación y chat.
 import os
 import io
 import csv
-from datetime import datetime
+from datetime import datetime, timezone
 from pathlib import Path
 
 from flask import Blueprint, request, jsonify, send_file, current_app
@@ -139,7 +139,7 @@ def get_essay_pdf(essay_id):
         return jsonify({'error': str(e)}), 500
 
 
-@bp.route('/essays/<int:essay_id>/report', methods=['GET'])
+@bp.route('/essays/<int:essay_id>/report', methods=['GET', 'POST'])
 @require_auth
 def generate_essay_report(essay_id):
     """Generar reporte PDF profesional del ensayo."""
@@ -147,37 +147,62 @@ def generate_essay_report(essay_id):
         ensayo = Ensayo.query.get_or_404(essay_id)
         user_id = request.current_user.get('user_id')
         
-        # Buscar si hay evaluación del jurado actual
-        evaluacion_jurado = EvaluacionJurado.query.filter_by(
-            ensayo_id=essay_id,
-            jurado_id=user_id
-        ).first()
-        
         # Preparar datos para el reporte
         essay_data = ensayo.to_dict()
         judge_data = None
         
-        if evaluacion_jurado:
+        # Si es POST y trae datos, usarlos (para previsualización/descarga con ediciones)
+        if request.method == 'POST' and request.is_json:
+            data = request.get_json()
+            # Construir judge_data desde el request
             judge_data = {
-                'puntuacion_total': evaluacion_jurado.puntuacion_total,
-                'comentario_general': evaluacion_jurado.comentario_general,
+                'puntuacion_total': data.get('puntuacion_total'),
+                'comentario_general': data.get('comentario_general'),
                 'puntajes': {
-                    'tecnica': evaluacion_jurado.calificacion_tecnica,
-                    'creatividad': evaluacion_jurado.calificacion_creatividad,
-                    'vinculacion': evaluacion_jurado.calificacion_vinculacion,
-                    'bienestar': evaluacion_jurado.calificacion_bienestar,
-                    'uso_ia': evaluacion_jurado.calificacion_uso_ia,
-                    'impacto': evaluacion_jurado.calificacion_impacto
+                    'tecnica': data.get('calidad_tecnica', {}).get('calificacion'),
+                    'creatividad': data.get('creatividad', {}).get('calificacion'),
+                    'vinculacion': data.get('vinculacion_tematica', {}).get('calificacion'),
+                    'bienestar': data.get('bienestar_colectivo', {}).get('calificacion'),
+                    'uso_ia': data.get('uso_responsable_ia', {}).get('calificacion') or data.get('uso_ia', {}).get('calificacion'),
+                    'impacto': data.get('potencial_impacto', {}).get('calificacion')
                 },
                 'comentarios': {
-                    'tecnica': evaluacion_jurado.comentario_tecnica,
-                    'creatividad': evaluacion_jurado.comentario_creatividad,
-                    'vinculacion': evaluacion_jurado.comentario_vinculacion,
-                    'bienestar': evaluacion_jurado.comentario_bienestar,
-                    'uso_ia': evaluacion_jurado.comentario_uso_ia,
-                    'impacto': evaluacion_jurado.comentario_impacto
+                    'tecnica': data.get('calidad_tecnica', {}).get('comentario'),
+                    'creatividad': data.get('creatividad', {}).get('comentario'),
+                    'vinculacion': data.get('vinculacion_tematica', {}).get('comentario'),
+                    'bienestar': data.get('bienestar_colectivo', {}).get('comentario'),
+                    'uso_ia': data.get('uso_responsable_ia', {}).get('comentario') or data.get('uso_ia', {}).get('comentario'),
+                    'impacto': data.get('potencial_impacto', {}).get('comentario')
                 }
             }
+        else:
+            # Buscar si hay evaluación del jurado actual
+            evaluacion_jurado = EvaluacionJurado.query.filter_by(
+                ensayo_id=essay_id,
+                jurado_id=user_id
+            ).first()
+            
+            if evaluacion_jurado:
+                judge_data = {
+                    'puntuacion_total': evaluacion_jurado.puntuacion_total,
+                    'comentario_general': evaluacion_jurado.comentario_general,
+                    'puntajes': {
+                        'tecnica': evaluacion_jurado.calificacion_tecnica,
+                        'creatividad': evaluacion_jurado.calificacion_creatividad,
+                        'vinculacion': evaluacion_jurado.calificacion_vinculacion,
+                        'bienestar': evaluacion_jurado.calificacion_bienestar,
+                        'uso_ia': evaluacion_jurado.calificacion_uso_ia,
+                        'impacto': evaluacion_jurado.calificacion_impacto
+                    },
+                    'comentarios': {
+                        'tecnica': evaluacion_jurado.comentario_tecnica,
+                        'creatividad': evaluacion_jurado.comentario_creatividad,
+                        'vinculacion': evaluacion_jurado.comentario_vinculacion,
+                        'bienestar': evaluacion_jurado.comentario_bienestar,
+                        'uso_ia': evaluacion_jurado.comentario_uso_ia,
+                        'impacto': evaluacion_jurado.comentario_impacto
+                    }
+                }
             
         generator = ReportGenerator()
         pdf_buffer = generator.generate_essay_report(essay_data, judge_data)
@@ -606,7 +631,7 @@ def actualizar_criterio(criterio_id):
         if 'activo' in data:
             criterio.activo = data['activo']
         
-        criterio.fecha_modificacion = datetime.utcnow()
+        criterio.fecha_modificacion = datetime.now(timezone.utc)
         
         db.session.commit()
         
@@ -809,10 +834,10 @@ def guardar_evaluacion_jurado():
             evaluacion.comentario_general = data.get('comentario_general', '')
             evaluacion.puntuacion_total = data.get('puntuacion_total', 0)
             evaluacion.estado = data.get('estado', 'completada')
-            evaluacion.fecha_modificacion = datetime.utcnow()
+            evaluacion.fecha_modificacion = datetime.now(timezone.utc)
             
             if evaluacion.estado == 'completada':
-                evaluacion.fecha_completada = datetime.utcnow()
+                evaluacion.fecha_completada = datetime.now(timezone.utc)
         else:
             evaluacion = EvaluacionJurado(
                 ensayo_id=ensayo_id,
@@ -832,7 +857,7 @@ def guardar_evaluacion_jurado():
                 comentario_general=data.get('comentario_general', ''),
                 puntuacion_total=data.get('puntuacion_total', 0),
                 estado=data.get('estado', 'completada'),
-                fecha_completada=datetime.utcnow() if data.get('estado') == 'completada' else None
+                fecha_completada=datetime.now(timezone.utc) if data.get('estado') == 'completada' else None
             )
             db.session.add(evaluacion)
         

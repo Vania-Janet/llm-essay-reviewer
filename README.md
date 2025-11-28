@@ -1,309 +1,536 @@
-# Sistema de Evaluación Inteligente de Ensayos
+# Essay Agent - Sistema de Evaluación de Ensayos con IA
 
-[![Python](https://img.shields.io/badge/Python-3.8+-blue.svg)](https://www.python.org/)
-[![LangChain](https://img.shields.io/badge/LangChain-Latest-green.svg)](https://langchain.com/)
-[![OpenAI](https://img.shields.io/badge/OpenAI-GPT--4-orange.svg)](https://openai.com/)
-[![License](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+Sistema completo para la evaluación automatizada de ensayos académicos utilizando modelos de lenguaje avanzados (LLMs). Incluye autenticación de usuarios, gestión de ensayos, evaluación mediante IA, sistema de jurados, y generación de reportes en PDF.
 
-Sistema de evaluación automática de ensayos académicos impulsado por inteligencia artificial, utilizando **LangGraph** y **LangChain** con modelos GPT-4 de OpenAI.
+## Tabla de Contenidos
 
-<!-- Inserte aquí GIF o video demostrativo del sistema -->
-<!-- ![Demo del Sistema](ruta/al/demo.gif) -->
-<!-- O para video: [![Video Demo](thumbnail.png)](https://link-al-video.com) -->
-
----
+- [Características Principales](#características-principales)
+- [Arquitectura del Sistema](#arquitectura-del-sistema)
+- [Estructura del Proyecto](#estructura-del-proyecto)
+- [Requisitos del Sistema](#requisitos-del-sistema)
+- [Instalación](#instalación)
+- [Configuración](#configuración)
+- [Uso](#uso)
+- [Testing](#testing)
+- [Despliegue en Producción](#despliegue-en-producción)
+- [API Endpoints](#api-endpoints)
 
 ## Características Principales
 
-| Característica | Descripción |
-|----------------|-------------|
-| **Evaluación Multi-Criterio** | 5 criterios académicos rigurosos con ponderaciones personalizables |
-| **Procesamiento Inteligente de PDFs** | Extracción y limpieza automática de documentos |
-| **IA Avanzada** | Powered by GPT-4 con structured outputs para precisión |
-| **Reportes Profesionales** | Generación de reportes HTML visualmente atractivos |
-| **Procesamiento por Lotes** | Evaluación masiva de múltiples ensayos |
-| **Interfaz Web** | Aplicación web profesional con drag & drop |
+### Sistema de Autenticación
+- Registro y login de usuarios con validación robusta
+- Tokens JWT con expiración configurable
+- Hashing de contraseñas con bcrypt (12 rounds)
+- Gestión de roles (usuario, jurado, admin)
+- Rate limiting para prevenir ataques de fuerza bruta
 
----
+### Evaluación de Ensayos
+- Subida y procesamiento de archivos PDF
+- Extracción de texto con pdfplumber
+- Evaluación automatizada mediante OpenAI GPT-4
+- Detección y emparejamiento de anexos IA
+- Criterios de evaluación personalizables:
+  - Calidad técnica
+  - Creatividad
+  - Vinculación temática
+  - Bienestar colectivo
+  - Uso responsable de IA
+  - Potencial de impacto
 
-## Criterios de Evaluación
+### Sistema de Jurados
+- Evaluación manual por múltiples jurados
+- Comparación de evaluaciones IA vs Jurado
+- Sistema de pesos personalizables por criterio
+- Gestión de estados (borrador, completada)
+- Tracking de cambios y fecha de completado
 
-El sistema evalúa ensayos académicos mediante **5 criterios fundamentales**, cada uno con análisis detallado y comentarios constructivos:
+### Reportes y Análisis
+- Generación de reportes PDF profesionales
+- Rankings de ensayos por puntuación
+- Estadísticas de evaluaciones
+- Historial de evaluaciones por jurado
+- Comparativas entre evaluaciones
 
-| Criterio | Peso | Descripción |
-|----------|------|-------------|
-| **Calidad Técnica y Rigor Académico** | 20% | Estructura, coherencia, argumentación sólida y respaldo bibliográfico |
-| **Creatividad y Originalidad** | 20% | Innovación en ideas, perspectivas únicas y pensamiento crítico |
-| **Vinculación con Ejes Temáticos** | 20% | Integración de tecnología, sostenibilidad e inclusión |
-| **Bienestar Colectivo y Responsabilidad Social** | 20% | Impacto social, consideraciones éticas y sostenibilidad |
-| **Potencial de Impacto y Publicación** | 20% | Claridad comunicativa, relevancia y capacidad de inspirar |
+### Interfaz de Usuario
+- Panel de administración completo
+- Interfaz de chat para consultas sobre ensayos
+- Visualización de evaluaciones en tiempo real
+- Gestión de criterios personalizados
+- Panel de estadísticas
 
-**Sistema de Calificación:** Escala de 1 a 5 con retroalimentación detallada por criterio.
+## Arquitectura del Sistema
 
----
+### Stack Tecnológico
 
-## Arquitectura
+**Backend:**
+- Flask 3.0+ (Framework web)
+- SQLAlchemy (ORM)
+- Flask-Migrate (Migraciones de BD)
+- Flask-Limiter (Rate limiting)
 
-El sistema utiliza **LangGraph** para crear un grafo de evaluación secuencial:
+**Autenticación y Seguridad:**
+- bcrypt (Hashing de contraseñas)
+- PyJWT (Tokens JWT)
+- Flask-CORS (Control de CORS)
 
-<!-- Inserte aquí diagrama de arquitectura -->
-<!-- ![Diagrama de Arquitectura](ruta/al/diagrama-arquitectura.png) -->
+**IA y Procesamiento:**
+- LangChain (Framework LLM)
+- LangGraph (Orchestration)
+- OpenAI GPT-4 (Modelo de lenguaje)
+- pypdf/pdfplumber (Procesamiento PDF)
 
-```
-Inicio → Calidad Técnica → Creatividad → Vinculación → Bienestar → Impacto → Comentario General → Fin
-```
+**Reportes:**
+- ReportLab (Generación PDF)
 
-Cada nodo del grafo:
-- Evalúa un criterio específico usando prompts especializados
-- Asigna una calificación (1-5)
-- Genera comentarios detallados
-- Pasa el estado al siguiente nodo
+**Base de Datos:**
+- SQLite (Desarrollo)
+- PostgreSQL (Recomendado para producción)
+
+### Patrones de Diseño
+
+**Factory Pattern:** Creación de la aplicación Flask con diferentes configuraciones
+
+**Blueprint Pattern:** Organización modular de rutas (auth, essays, evaluation, admin)
+
+**Middleware Pattern:** Manejo de autenticación, rate limiting y logging
+
+**Repository Pattern:** Modelos SQLAlchemy como capa de acceso a datos
 
 ## Estructura del Proyecto
 
 ```
 essay-agent/
-├── .env                    # Variables de entorno (OPENAI_API_KEY)
-├── requirements.txt        # Dependencias del proyecto
-├── models.py              # Modelos Pydantic para datos
-├── prompts.py             # Prompts del sistema
-├── agent.py               # Agente evaluador con LangGraph
-├── pdf_processor.py       # Procesador de PDFs con limpieza LLM
-├── main.py                # Script para evaluar ensayos .txt
-├── evaluar_batch.py       # Evaluación masiva de archivos .txt
-├── evaluar_pdfs.py        # Evaluación directa desde PDFs
-└── README.md              # Este archivo
+├── app/
+│   ├── __init__.py
+│   ├── config.py                 # Configuración por entornos
+│   ├── api/
+│   │   ├── __init__.py
+│   │   ├── middleware.py         # Rate limiting y auth manager
+│   │   └── routes/
+│   │       ├── __init__.py
+│   │       ├── auth.py          # Login, registro, logout
+│   │       ├── essays.py        # CRUD de ensayos
+│   │       ├── evaluation.py    # Evaluación y chat
+│   │       └── admin.py         # Panel de administración
+│   ├── core/
+│   │   ├── __init__.py
+│   │   ├── evaluator.py         # Motor de evaluación IA
+│   │   ├── models.py            # Modelos LangChain
+│   │   └── prompts.py           # Prompts para el LLM
+│   ├── database/
+│   │   ├── __init__.py
+│   │   ├── connection.py        # Inicialización SQLAlchemy
+│   │   └── models.py            # Modelos de BD (Usuario, Ensayo, etc.)
+│   ├── utils/
+│   │   ├── __init__.py
+│   │   ├── security.py          # AuthManager, JWT, bcrypt
+│   │   ├── pdf_processor.py    # Extracción de texto PDF
+│   │   ├── attachment_matcher.py # Emparejamiento anexos
+│   │   ├── logger.py            # Sistema de logging
+│   │   └── report_generator.py # Generación reportes PDF
+│   ├── static/
+│   │   ├── styles.css
+│   │   ├── script.js
+│   │   ├── main.js
+│   │   ├── grading_cockpit.js
+│   │   └── criteria_management.js
+│   └── templates/
+│       ├── index.html           # Dashboard principal
+│       └── login.html           # Página de login
+├── data/
+│   ├── pdfs/                    # Ensayos PDF
+│   ├── anexos/                  # Anexos IA
+│   ├── processed/               # Archivos procesados
+│   ├── uploads/                 # Uploads temporales
+│   └── essays.db                # Base de datos SQLite
+├── migrations/                  # Migraciones Alembic
+├── tests/
+│   ├── __init__.py
+│   ├── conftest.py              # Fixtures pytest
+│   ├── test_unit.py             # Tests unitarios
+│   ├── test_integration.py      # Tests de integración
+│   ├── test_production.py       # Tests de producción
+│   └── test_load.py             # Tests de carga
+├── scripts/
+│   ├── evaluar_pdfs.py          # Script de evaluación batch
+│   ├── generar_excel_profesional.py
+│   ├── load_processed_essays.py
+│   └── matches_ia.py            # Emparejamiento anexos
+├── run.py                       # Entry point de la aplicación
+├── manage.py                    # CLI para migraciones
+├── requirements.txt             # Dependencias Python
+├── .env.example                 # Plantilla de variables de entorno
+└── README.md                    # Este archivo
 ```
 
----
+## Requisitos del Sistema
 
-## Instalación y Configuración
+### Software
+- Python 3.10 o superior
+- pip (gestor de paquetes Python)
+- Virtual environment (recomendado)
 
-### Requisitos Previos
+### Servicios Externos
+- OpenAI API Key (para evaluación con GPT-4)
 
-- Python 3.8 o superior
-- Cuenta de OpenAI con API key activa
-- pip (gestor de paquetes de Python)
+### Opcional
+- PostgreSQL 13+ (para producción)
+- Redis (para caché y rate limiting avanzado)
 
-### Pasos de Instalación
+## Instalación
 
-#### 1. Clonar el Repositorio
+### 1. Clonar el Repositorio
 
 ```bash
 git clone https://github.com/Vania-Janet/llm-essay-reviewer.git
-cd llm-essay-reviewer
+cd essay-agent
 ```
 
-#### 2. Instalar Dependencias
+### 2. Crear y Activar Entorno Virtual
+
+```bash
+# Crear entorno virtual
+python3 -m venv .venv
+
+# Activar (macOS/Linux)
+source .venv/bin/activate
+
+# Activar (Windows)
+.venv\Scripts\activate
+```
+
+### 3. Instalar Dependencias
 
 ```bash
 pip install -r requirements.txt
 ```
 
-**Dependencias principales:**
-- `langchain`, `langgraph`, `langchain-openai` - Framework de IA
-- `pypdf`, `pdfplumber` - Procesamiento de documentos PDF
-- `flask` - Servidor web (para interfaz web)
-- `pydantic`, `python-dotenv` - Utilidades y validación
+### 4. Configurar Variables de Entorno
 
-#### 3. Configurar Variables de Entorno
+Copiar el archivo de ejemplo y configurar:
 
-Crea un archivo `.env` en la raíz del proyecto:
+```bash
+cp .env.example .env
+```
+
+Editar `.env` con tus valores:
 
 ```env
-OPENAI_API_KEY=sk-tu_clave_aqui
+# Flask
+FLASK_ENV=development
+SECRET_KEY=tu-secret-key-muy-segura-aqui
+DEBUG=True
+
+# OpenAI
+OPENAI_API_KEY=sk-tu-api-key-aqui
+
+# JWT
+JWT_SECRET_KEY=tu-jwt-secret-key-aqui
+
+# Database (opcional, por defecto usa SQLite)
+# DATABASE_URL=postgresql://usuario:password@localhost/essays_db
+
+# CORS (opcional)
+CORS_ORIGINS=http://localhost:3000,http://localhost:5001
 ```
 
-> **Obtén tu API Key:** [https://platform.openai.com/api-keys](https://platform.openai.com/api-keys)
-
-#### 4. Verificar Instalación
+### 5. Inicializar Base de Datos
 
 ```bash
-python test_pdf_processor.py
+# Crear las tablas
+python manage.py init
+
+# Aplicar migraciones (si existen)
+python manage.py upgrade
 ```
 
----
+## Configuración
 
-## Guía de Uso
+### Configuración por Entornos
 
-### Configuración de Seguridad (NUEVO) 🔐
+El sistema soporta tres entornos configurables:
 
-El sistema ahora incluye autenticación segura. **Configuración obligatoria antes del primer uso:**
+**Development** (`development`)
+- Debug habilitado
+- Base de datos SQLite local
+- CORS permisivo
+- Logging detallado
+
+**Testing** (`testing`)
+- Base de datos temporal
+- Rate limiting deshabilitado
+- Configuración optimizada para tests
+
+**Production** (`production`)
+- Debug deshabilitado
+- Validación estricta de secrets
+- HTTPS requerido
+- Rate limiting estricto
+
+### Cambiar de Entorno
 
 ```bash
-# Generar claves de seguridad automáticamente
-python setup_security.py
+export FLASK_ENV=production
+python run.py
 ```
 
-Este comando:
-- Genera claves secretas seguras (Flask y JWT)
-- Crea el archivo `.env` con la configuración
-- Opcionalmente crea un usuario administrador
+## Uso
 
-**Características de seguridad:**
-- ✅ Contraseñas hasheadas con bcrypt (NUNCA en texto plano)
-- ✅ Autenticación con JWT (tokens seguros)
-- ✅ Validación de fortaleza de contraseñas
-- ✅ Sesiones con expiración automática (24h)
-- ✅ HTTPS obligatorio en producción
-- ✅ SECRET_KEY persistente (no se invalidan sesiones al reiniciar)
-
-**⚠️ IMPORTANTE para Producción:**
-Las claves secretas DEBEN estar en variables de entorno permanentes.
-Ver guía completa: **[SECURITY_SETUP.md](SECURITY_SETUP.md)**
-
-### Migración de Base de Datos (Si actualizas desde versión anterior) 🔄
-
-Si ya tenías ensayos evaluados con una versión anterior del sistema, ejecuta el script de migración:
+### Iniciar el Servidor
 
 ```bash
-python migrate_add_nombre_original.py
+# Desarrollo (puerto 5001)
+python run.py
+
+# Especificar puerto
+PORT=8000 python run.py
+
+# Producción
+FLASK_ENV=production python run.py
 ```
 
-Este script:
-- ✅ Agrega el campo `nombre_archivo_original` a la tabla de ensayos
-- ✅ Preserva todos los datos existentes
-- ✅ Actualiza registros antiguos con compatibilidad hacia atrás
+La aplicación estará disponible en `http://localhost:5001`
 
-**Nota:** Este paso es opcional si instalas el sistema por primera vez.
-
-### Interfaz Web 
-La forma más sencilla de usar el sistema:
-
-```bash
-cd web
-python app.py
-```
-
-Luego abre en tu navegador: **http://localhost:5001**
-
-**Primera vez:**
-1. Accede a `/login.html`
-2. Crea una cuenta (registro)
-3. Inicia sesión
-4. ¡Comienza a evaluar ensayos!
-
-**Características de la interfaz web:**
-- 🔐 Sistema de login y registro seguro
-- Drag & drop de archivos PDF
-- Procesamiento en tiempo real
-- Visualización profesional de resultados
-- Diseño responsivo y moderno
-
---- 
-
-### Modificar prompts:
-
-Edita `prompts.py` para ajustar los criterios de evaluación o el tono de los comentarios.
-
-### Ajustar ponderaciones:
-
-Modifica el método `calcular_puntuacion_total()` en `models.py`.
-
-### Elegir método de extracción de PDF:
+### Crear Usuario Administrador
 
 ```python
-# Automático (prefiere pdfplumber)
-processor.procesar_pdf("ensayo.pdf", metodo="auto")
-
-# Específico
-processor.procesar_pdf("ensayo.pdf", metodo="pypdf")  # Más rápido
-processor.procesar_pdf("ensayo.pdf", metodo="pdfplumber")  # Mejor calidad
+python manage.py create-admin
 ```
 
----
+### Evaluar Ensayos en Batch
 
-## Stack Tecnológico
+```bash
+python scripts/evaluar_pdfs.py
+```
 
-| Tecnología | Propósito | Versión |
-|------------|-----------|---------|
-| **LangChain** | Framework para aplicaciones LLM | Latest |
-| **LangGraph** | Orquestación de flujos con grafos | Latest |
-| **OpenAI GPT-4** | Modelo de lenguaje avanzado | GPT-4 / GPT-4o |
-| **Flask** | Servidor web backend | Latest |
-| **Pydantic** | Validación y modelos de datos | 2.0+ |
-| **pypdf / pdfplumber** | Procesamiento de documentos PDF | Latest |
-| **Python** | Lenguaje de programación | 3.8+ |
+### Generar Reporte Excel
 
----
+```bash
+python scripts/generar_excel_profesional.py
+```
 
-## Casos de Uso
+## Testing
 
-### Instituciones Educativas
-- Evaluación automática de admisiones
-- Retroalimentación instantánea para estudiantes
-- Pre-selección de trabajos académicos
+### Ejecutar Todos los Tests
 
-### Convocatorias y Concursos
-- Procesamiento masivo de ensayos
-- Evaluación objetiva y estandarizada
-- Generación de reportes comparativos
+```bash
+pytest tests/ -v
+```
 
-### Investigación y Análisis
-- Limpieza y estructuración de documentos académicos
-- Análisis de contenido textual
-- Extracción de insights de múltiples ensayos
+### Tests por Categoría
 
----
+```bash
+# Tests unitarios
+pytest tests/test_unit.py -v
 
-## Configuración y Optimización
+# Tests de integración
+pytest tests/test_integration.py -v
 
-### Modelos Recomendados
+# Tests de producción
+pytest tests/test_production.py -v
 
-| Tarea | Modelo | Razón |
-|-------|--------|-------|
-| **Evaluación de Ensayos** | GPT-4 / GPT-4o | Mayor precisión y análisis profundo |
-| **Limpieza de PDFs** | GPT-4o-mini | Costo-efectivo, suficiente para limpieza |
+# Tests de carga
+pytest tests/test_load.py -v
+```
 
-### Notas Importantes
+### Tests con Cobertura
 
-- Sistema optimizado para ensayos en **español**
-- Tiempo de evaluación: **1-2 minutos** por ensayo
-- **Structured outputs** garantizan calificaciones precisas (1-5)
-- Comentarios constructivos orientados a la mejora
-- La limpieza de PDFs mantiene **100% del contenido original**
+```bash
+pytest tests/ --cov=app --cov-report=html
+```
 
----
+### Tests en Paralelo
 
-## Contribuciones
+```bash
+pytest tests/ -v -n auto
+```
 
-Las contribuciones son bienvenidas y apreciadas. Para contribuir:
+## Despliegue en Producción
 
+### Checklist Pre-Producción
+
+- [ ] Configurar `SECRET_KEY` y `JWT_SECRET_KEY` únicos
+- [ ] Configurar `OPENAI_API_KEY`
+- [ ] Cambiar a PostgreSQL (recomendado)
+- [ ] Habilitar HTTPS
+- [ ] Configurar `secure=True` en cookies
+- [ ] Configurar sistema de logging
+- [ ] Configurar backups de base de datos
+- [ ] Configurar monitoreo (Sentry, etc.)
+- [ ] Revisar rate limits
+- [ ] Configurar CORS apropiadamente
+
+### Base de Datos PostgreSQL
+
+```bash
+# Instalar driver
+pip install psycopg2-binary
+
+# Configurar DATABASE_URL en .env
+DATABASE_URL=postgresql://usuario:password@localhost:5432/essays_db
+```
+
+### Servidor WSGI (Gunicorn)
+
+```bash
+# Instalar Gunicorn
+pip install gunicorn
+
+# Ejecutar
+gunicorn -w 4 -b 0.0.0.0:8000 "run:create_app('production')"
+```
+
+### Docker (Opcional)
+
+```dockerfile
+FROM python:3.11-slim
+
+WORKDIR /app
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+
+COPY . .
+EXPOSE 8000
+
+CMD ["gunicorn", "-w", "4", "-b", "0.0.0.0:8000", "run:create_app('production')"]
+```
+
+## API Endpoints
+
+### Autenticación
+
+| Método | Endpoint | Descripción | Auth |
+|--------|----------|-------------|------|
+| POST | `/api/register` | Registrar nuevo usuario | No |
+| POST | `/api/login` | Iniciar sesión | No |
+| POST | `/api/logout` | Cerrar sesión | Sí |
+| GET | `/api/verify-token` | Verificar token válido | Sí |
+| POST | `/api/change-password` | Cambiar contraseña | Sí |
+
+### Ensayos
+
+| Método | Endpoint | Descripción | Auth |
+|--------|----------|-------------|------|
+| GET | `/api/essays` | Listar todos los ensayos | Sí |
+| GET | `/api/essays/:id` | Obtener ensayo específico | Sí |
+| POST | `/api/evaluate` | Subir y evaluar PDF | Sí |
+| GET | `/api/essays/ranking` | Ranking de ensayos | Sí |
+| GET | `/api/essays/:id/evaluation` | Ver evaluación | Sí |
+| DELETE | `/api/essays/:id` | Eliminar ensayo | Admin |
+
+### Evaluación
+
+| Método | Endpoint | Descripción | Auth |
+|--------|----------|-------------|------|
+| POST | `/api/chat` | Chat sobre ensayo | Sí |
+| POST | `/api/essays/:id/evaluate` | Evaluar como jurado | Jurado |
+| GET | `/api/jurado/evaluations` | Mis evaluaciones | Jurado |
+| POST | `/api/essays/:id/report` | Generar reporte PDF | Sí |
+
+### Administración
+
+| Método | Endpoint | Descripción | Auth |
+|--------|----------|-------------|------|
+| GET | `/api/admin/users` | Listar usuarios | Admin |
+| GET | `/api/admin/statistics` | Estadísticas | Admin |
+| PUT | `/api/admin/users/:id` | Editar usuario | Admin |
+| DELETE | `/api/admin/users/:id` | Eliminar usuario | Admin |
+
+### Criterios Personalizados
+
+| Método | Endpoint | Descripción | Auth |
+|--------|----------|-------------|------|
+| GET | `/api/criterios` | Listar criterios | Sí |
+| POST | `/api/criterios` | Crear criterio | Jurado |
+| PUT | `/api/criterios/:id` | Actualizar criterio | Jurado |
+| DELETE | `/api/criterios/:id` | Eliminar criterio | Jurado |
+
+### Health Check
+
+| Método | Endpoint | Descripción | Auth |
+|--------|----------|-------------|------|
+| GET | `/health` | Estado del servidor | No |
+| GET | `/api/db-status` | Estado de la BD | No |
+
+## Modelos de Base de Datos
+
+### Usuario
+- Autenticación y autorización
+- Roles: usuario, jurado, admin
+- Tracking de último acceso
+
+### Ensayo
+- Contenido del ensayo (texto, PDF)
+- Evaluación automatizada
+- Hash de texto para prevenir duplicados
+- Relación con anexos IA
+
+### EvaluacionJurado
+- Evaluaciones manuales por jurados
+- Múltiples criterios de evaluación
+- Estados: borrador, completada
+- Cálculo automático de puntuación total
+
+### CriterioPersonalizado
+- Criterios definidos por usuarios
+- Sistema de pesos configurables
+- Ordenamiento personalizable
+
+### Comparacion
+- Comparación IA vs Jurado
+- Tracking de diferencias
+- Análisis de discrepancias
+
+### PuntajeCriterio
+- Puntuaciones por criterio individual
+- Comentarios detallados
+- Tracking de cambios
+
+## Seguridad
+
+### Implementaciones de Seguridad
+
+- Hashing de contraseñas con bcrypt (12 rounds)
+- Tokens JWT con expiración (24 horas por defecto)
+- Rate limiting en endpoints sensibles
+- Validación de entrada en todos los endpoints
+- HttpOnly cookies para tokens
+- CORS configurable
+- Prevención de SQL injection (SQLAlchemy ORM)
+- Validación de tipos de archivo
+- Límite de tamaño de archivo (16MB)
+
+### Recomendaciones Adicionales
+
+Para producción, considera implementar:
+- HTTPS obligatorio
+- CSRF protection
+- Content Security Policy headers
+- Monitoreo de actividad sospechosa
+- Rotación periódica de secrets
+- Auditoría de accesos
+
+## Soporte y Contribuciones
+
+Para reportar problemas o solicitar características:
+- Crear un issue en GitHub
+- Contactar al equipo de desarrollo
+
+Para contribuir:
 1. Fork del repositorio
-2. Crea una rama para tu feature (`git checkout -b feature/NuevaFuncionalidad`)
-3. Commit tus cambios (`git commit -m 'Agregar nueva funcionalidad'`)
-4. Push a la rama (`git push origin feature/NuevaFuncionalidad`)
-5. Abre un Pull Request
-
----
+2. Crear rama para feature
+3. Commit de cambios
+4. Push a la rama
+5. Crear Pull Request
 
 ## Licencia
 
-Este proyecto está bajo la licencia MIT. Ver el archivo `LICENSE` para más detalles.
+Este proyecto es privado y confidencial. Todos los derechos reservados.
+
+## Contacto
+
+Para más información, contactar al equipo de desarrollo del proyecto.
 
 ---
 
-## Soporte y Contacto
-
-- **Reportar bugs:** [Abrir un issue](https://github.com/Vania-Janet/llm-essay-reviewer/issues)
-- **Sugerencias:** [Iniciar una discusión](https://github.com/Vania-Janet/llm-essay-reviewer/discussions)
-- **Email:** [Contacto directo](mailto:tu-email@ejemplo.com)
-
----
-
-## Agradecimientos
-
-Desarrollado utilizando tecnologías de vanguardia en IA y procesamiento de lenguaje natural.
-
-**Powered by:**
-- [LangChain](https://langchain.com/)
-- [OpenAI](https://openai.com/)
-- [Python](https://python.org/)
-
----
-
-<div align="center">
-
-**Si este proyecto te fue útil, considera darle una estrella en GitHub**
-
-</div>
+**Nota:** Este README asume que el proyecto está en desarrollo activo. Actualizar la documentación conforme se agreguen nuevas características o se realicen cambios significativos.

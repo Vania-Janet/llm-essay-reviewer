@@ -77,7 +77,7 @@ def register():
             'token',
             token,
             httponly=True,
-            secure=False,  # True en producción con HTTPS
+            secure=current_app.config.get('FLASK_ENV') == 'production',
             samesite='Lax',
             max_age=86400
         )
@@ -152,7 +152,7 @@ def login():
             'token',
             token,
             httponly=True,
-            secure=False,
+            secure=current_app.config.get('FLASK_ENV') == 'production',
             samesite='Lax',
             max_age=86400
         )
@@ -177,7 +177,7 @@ def logout():
         '',
         expires=0,
         httponly=True,
-        secure=False,
+        secure=current_app.config.get('FLASK_ENV') == 'production',
         samesite='Lax',
         max_age=0
     )

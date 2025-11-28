@@ -310,8 +310,18 @@ if (downloadReportBtn) downloadReportBtn.addEventListener('click', async () => {
         const originalContent = downloadReportBtn.innerHTML;
         downloadReportBtn.textContent = 'Generando PDF...';
 
+        // Actualizar currentEvaluation con los valores del DOM (por si hubo ediciones)
+        updateEvaluationFromDOM();
+
         // Usar el endpoint del backend para generar el PDF profesional
-        const response = await authenticatedFetch(`/api/essays/${currentEvaluation.id}/report`);
+        // Enviamos currentEvaluation para incluir cualquier edición local
+        const response = await authenticatedFetch(`/api/essays/${currentEvaluation.id}/report`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(currentEvaluation)
+        });
         
         if (!response.ok) {
             throw new Error('Error al generar el reporte');
@@ -1084,7 +1094,7 @@ function saveTotalScore() {
 
 function updateEvaluationFromDOM() {
     // Update comments from DOM
-    const criterios = ['calidad_tecnica', 'creatividad', 'vinculacion_tematica', 'bienestar_colectivo', 'potencial_impacto'];
+    const criterios = ['calidad_tecnica', 'creatividad', 'vinculacion_tematica', 'bienestar_colectivo', 'uso_responsable_ia', 'potencial_impacto'];
     
     criterios.forEach((criterio, index) => {
         const commentEl = document.getElementById(`comment${index + 1}`);
